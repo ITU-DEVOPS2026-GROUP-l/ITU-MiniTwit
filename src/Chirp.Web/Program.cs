@@ -119,7 +119,15 @@ public partial class Program
             app.UseHttpsRedirection();
         }
         app.UseStaticFiles();
-
+        app.Use(async (context, next) =>
+        {
+            if (context.Request.Path.StartsWithSegments("/Identity/Account/Manage"))
+            {
+                context.Response.StatusCode = 404;
+                return;
+            }
+            await next();
+        });
         app.UseRouting();
 
         app.UseAuthentication();
