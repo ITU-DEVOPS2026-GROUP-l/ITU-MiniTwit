@@ -1,12 +1,15 @@
-@using Microsoft.AspNetCore.Identity
-@using Chirp.Core.Models
+@using Chirp.Application.Services.Interface
+@using Chirp.Web.Services
+@inject IAuthorService AuthorService
 
-@inject SignInManager<Author> SignInManager
-@inject UserManager<Author> UserManager
+@{
+    var userId = SessionAuth.GetUserId(Context.Session);
+    var currentAuthor = string.IsNullOrWhiteSpace(userId) ? null : AuthorService.FindAuthorById(userId);
+}
 
-@if (SignInManager.IsSignedIn(User))
+@if (currentAuthor != null)
 {
-    <a id="manage" asp-area="Identity" asp-page="/Account/Manage/Index" title="Manage">Hello @UserManager.GetUserName(User)!</a>
+    <a id="manage" asp-area="Identity" asp-page="/Account/Manage/Index" title="Manage">Hello @currentAuthor.Name!</a>
     <text> | </text>
     <form id="logoutForm" style="display: inline;" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Page("/Index", new { area = "" })">
         <button id="logout" type="submit" style="background: none; border: none; color: #0366d6; text-decoration: underline; cursor: pointer;">Logout</button>

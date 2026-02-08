@@ -3,9 +3,7 @@ using System.IO;
 using Chirp.Core.Data;
 using Chirp.Core.Models;
 using Chirp.Core.Repositories;
-using Chirp.Infrastructure.Services;
 using Chirp.Razor.Repositories;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
 using Chirp.Application.Services.Implementation;
 using Chirp.Application.Services.Interface;
@@ -29,15 +27,15 @@ using Chirp.Application.Services.Interface;
 var builder = WebApplication.CreateBuilder(args);
 var app = Program.BuildWebApplication(args);
 app.Run();
-//Small commit
+
 public partial class Program
 {
     public static WebApplication BuildWebApplication(
         string[]? args = null,
-        string? connectionStringOverride = null,
         bool disableHttpsRedirection = false,
+        bool disableExternalAuth = true, //Disables Github authentication
+        string? connectionStringOverride = null,
         string? environmentName = null,
-        bool disableExternalAuth = false,
         string? contentRoot = null)
     {
         var builder = WebApplication.CreateBuilder(new WebApplicationOptions
@@ -68,7 +66,6 @@ public partial class Program
         });
         builder.Services.AddControllersWithViews();
         builder.Services.AddScoped<ICheepService, CheepService>();
-        builder.Services.AddScoped<IIdentityUserService, IdentityUserService>();
         builder.Services.AddScoped<ICheepRepository, CheepRepository>();
         builder.Services.AddScoped<IAuthorService, AuthorService>();
         builder.Services.AddScoped<IAuthorRepository, AuthorRepository>();
@@ -89,22 +86,19 @@ public partial class Program
                 options.User.RequireUniqueEmail = true;
             }).AddEntityFrameworkStores<ChirpDBContext>();
 
-        if (!disableExternalAuth)
+        builder.Services.AddDistributedMemoryCache();
+        
+        //Removed external login possibility.
+        
+        builder.Services.AddSession(options =>
         {
-            builder.Services.AddAuthentication().AddGitHub(options =>
-            {
-                options.ClientId = builder.Configuration["Authentication:GitHub:ClientId"]!;
-                options.ClientSecret = builder.Configuration["Authentication:GitHub:ClientSecret"]!;
-                options.Scope.Add("user:email");
+            options.IdleTimeout = TimeSpan.FromMinutes(20);
+            options.Cookie.HttpOnly = true;
+            options.Cookie.IsEssential = true;
+        });
+        // External login providers are disabled; login state is tracked via session.
 
-                options.ClaimActions.MapJsonKey("urn:github:name", "name");
-            });
-        }
-        else
-        {
-            builder.Services.AddAuthentication();
-        }
-
+        
         var app = builder.Build();
 
         using (var scope = app.Services.CreateScope())
@@ -130,6 +124,8 @@ public partial class Program
 
         app.UseAuthentication();
         app.UseAuthorization();
+        
+        app.UseSession();
 
         app.MapRazorPages();
         app.MapFallbackToPage("/PublicView");

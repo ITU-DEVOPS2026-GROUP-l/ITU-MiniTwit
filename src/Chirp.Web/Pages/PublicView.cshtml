@@ -52,8 +52,7 @@
                                 <img src="@profilePic" alt="@cheep.Author" class="cheep-profile-pic" />
                                 <a href="/@cheep.AuthorId">@cheep.Author</a>
 
-                                @if (User.Identity != null && User.Identity.IsAuthenticated &&
-                                    (Model.IdentityAuthor == null || cheep.AuthorId != Model.IdentityAuthor.Id))
+                                @if (Model.IdentityAuthor != null && cheep.AuthorId != Model.IdentityAuthor.Id)
                                 {
                                     <form method="post" asp-page-handler="ToggleFollow" style="display:inline;">
                                         <input type="hidden" name="followeeId" value="@cheep.AuthorId" />

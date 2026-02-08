@@ -4,6 +4,7 @@
 
 using System;
 using System.Threading.Tasks;
+using Chirp.Web.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -14,29 +15,25 @@ namespace Chirp.Web.Areas.Identity.Pages.Account
 {
     public class LogoutModel : PageModel
     {
-        private readonly SignInManager<Chirp.Core.Models.Author> _signInManager;
         private readonly ILogger<LogoutModel> _logger;
 
-        public LogoutModel(SignInManager<Chirp.Core.Models.Author> signInManager, ILogger<LogoutModel> logger)
+        public LogoutModel(ILogger<LogoutModel> logger)
         {
-            _signInManager = signInManager;
             _logger = logger;
         }
 
         public async Task<IActionResult> OnGet(string returnUrl = "/")
         {
-            await _signInManager.SignOutAsync();
+            SessionAuth.SignOut(HttpContext.Session);
             _logger.LogInformation("User logged out.");
-            if (returnUrl != null)
-            {
-                return LocalRedirect(returnUrl);
-            }
-            else
-            {
-                // This needs to be a redirect so that the browser performs a new
-                // request and the identity for the user gets updated.
-                return RedirectToPage();
-            }
+            return LocalRedirect(returnUrl ?? "/");
+        }
+
+        public async Task<IActionResult> OnPost(string returnUrl = "/")
+        {
+            SessionAuth.SignOut(HttpContext.Session);
+            _logger.LogInformation("User logged out.");
+            return LocalRedirect(returnUrl ?? "/");
         }
     }
 }

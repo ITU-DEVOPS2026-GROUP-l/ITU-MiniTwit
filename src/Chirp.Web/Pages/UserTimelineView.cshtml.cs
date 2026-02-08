@@ -1,37 +1,39 @@
 using Chirp.Application.DTO;
 using Chirp.Core.Models;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
 using Chirp.Application.Services.Interface;
+using Chirp.Web.Services;
 
 namespace Chirp.Web.Pages;
 public class UserTimelineView : PageModel
 {
     private readonly ICheepService _cheepService;
     private readonly IAuthorService _authorService;
-    private readonly IIdentityUserService _identityService;
     public IEnumerable<CheepDTO> Cheeps { get; set; } = new List<CheepDTO>();
     public IEnumerable<AuthorDTO?> Following { get; set; } = new List<AuthorDTO>();
     public int CurrentPage { get; set; } //Tracker til pagination
     public AuthorDTO? Author { get; set; } = null;  //Tracker til author navn
     public AuthorDTO? IdentityAuthor { get; set; } = null;
-    public UserTimelineView(ICheepService cheepService, IAuthorService authorService, IIdentityUserService identityService)
+    
+    /**
+     * Manages a users timeline, and handles posts of followers, as well as own
+     * posts being shown on the users own timeline, as well as on timelines
+     * which are visited
+     */
+    public UserTimelineView(ICheepService cheepService, IAuthorService authorService)
     {
         _cheepService = cheepService;
         _authorService = authorService;
-        _identityService = identityService;
     }
 
     public async Task<ActionResult> OnGet(string authorId, [FromQuery] int page = 1) //Pagination via query string
     {
         Author = _authorService.FindAuthorById(authorId);
-
-        if (_identityService.IsSignedIn(User))
-        {
-            IdentityAuthor = await _identityService.GetCurrentIdentityAuthor(User);
-        }
+        
+        //Switch from _identityService to SessionAuth to manage user login
+        var sessionUserId = SessionAuth.GetUserId(HttpContext.Session);
+        IdentityAuthor = string.IsNullOrWhiteSpace(sessionUserId) ? null : _authorService.FindAuthorById(sessionUserId);
 
         if (Author == null)
         {
@@ -41,7 +43,7 @@ public class UserTimelineView : PageModel
         CurrentPage = page;
         Following = _authorService.GetFollowing(authorId);
 
-        if (_identityService.IsSignedIn(User) && authorId == Author.Id)
+        if (IdentityAuthor != null && authorId == Author.Id)
         {
             Cheeps = _cheepService.GetCheepsFromMultipleAuthors(
                 Following.Select(a =>
@@ -69,12 +71,13 @@ public class UserTimelineView : PageModel
     {
         // grab my current user.
 
-        if (!_identityService.IsSignedIn(User))
+        var sessionUserId = SessionAuth.GetUserId(HttpContext.Session);
+        if (string.IsNullOrWhiteSpace(sessionUserId))
         {
             return RedirectToPage();
         }
 
-        var userAuthor = await _identityService.GetCurrentIdentityAuthor(User);
+        var userAuthor = _authorService.FindAuthorById(sessionUserId);
 
         if (userAuthor == null)
         {
@@ -104,13 +107,17 @@ public class UserTimelineView : PageModel
         return author.Name;
     }
 
-    //handle likes and dislikes
+    /**
+     * Handles likes and dislikes. Uses userId to check if user has already liked a post
+     * Session based login is used instead of identity based cookies.
+     */
     public async Task<IActionResult> OnPostCheepLikeAsync(int cheepId, string userId)
     {
-        if (!_identityService.IsSignedIn(User))
+        var sessionUserId = SessionAuth.GetUserId(HttpContext.Session);
+        if (string.IsNullOrWhiteSpace(sessionUserId))
             return RedirectToPage();
 
-        var currentAuthor = await _identityService.GetCurrentIdentityAuthor(User);
+        var currentAuthor = _authorService.FindAuthorById(sessionUserId);
         if (currentAuthor == null)
             return RedirectToPage();
 
@@ -134,10 +141,11 @@ public class UserTimelineView : PageModel
 
     public async Task<IActionResult> OnPostCheepDislikeAsync(int cheepId, string userId)
     {
-        if (!_identityService.IsSignedIn(User))
+        var sessionUserId = SessionAuth.GetUserId(HttpContext.Session);
+        if (string.IsNullOrWhiteSpace(sessionUserId))
             return RedirectToPage();
 
-        var currentAuthor = await _identityService.GetCurrentIdentityAuthor(User);
+        var currentAuthor = _authorService.FindAuthorById(sessionUserId);
         if (currentAuthor == null)
             return RedirectToPage();
 

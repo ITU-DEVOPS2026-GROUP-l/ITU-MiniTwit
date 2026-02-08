@@ -1,3 +1,4 @@
+using System.Net;
 using Chirp.Application.DTO;
 using Chirp.Core.Models;
 using Chirp.Core.Repositories;
@@ -5,6 +6,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Chirp.Application.Services.Interface;
+using Chirp.Web.Services;
 
 namespace Chirp.Web.Pages;
 
@@ -12,23 +14,17 @@ public class PublicView : PageModel
 {
     [BindProperty]
     public string? Text { get; set; }
-    
     public IEnumerable<CheepDTO> Cheeps { get; set; } = new List<CheepDTO>();
     public IEnumerable<AuthorDTO?> Following { get; set; } = new List<AuthorDTO>();
     public int CurrentPage { get; set; }
     public AuthorDTO? IdentityAuthor { get; set; }
-
-    public AuthorDTO? Author { get; set; } = null;  //Tracker til author navn
-
-    private readonly ICheepService _cheepService;
     private readonly IAuthorService _authorService;
-    private readonly IIdentityUserService _identityService;
+    private readonly ICheepService _cheepService;
 
-    public PublicView(ICheepService cheepService, IAuthorService authorService, IIdentityUserService identityService)
+    public PublicView(ICheepService cheepService, IAuthorService authorService)
     {
         _cheepService = cheepService;
         _authorService = authorService;
-        _identityService = identityService;
     }
 
     public async Task<ActionResult> OnGet([FromQuery] int page = 1) //Pagination via query string
@@ -38,9 +34,10 @@ public class PublicView : PageModel
         CurrentPage = page;
         Cheeps = _cheepService.GetCheeps(page);
 
-        if (_identityService.IsSignedIn(User))
+        var userId = SessionAuth.GetUserId(HttpContext.Session);
+        if (!string.IsNullOrWhiteSpace(userId))
         {
-            IdentityAuthor = await _identityService.GetCurrentIdentityAuthor(User);
+            IdentityAuthor = _authorService.FindAuthorById(userId);
 
             if(IdentityAuthor == null)
             {
@@ -56,8 +53,8 @@ public class PublicView : PageModel
     public async Task<IActionResult> OnPost([FromQuery] int page = 1)
     {
         if (page < 1) page = 1;
-
-        AuthorDTO? author = await _identityService.GetCurrentIdentityAuthor(User);
+        var userId = SessionAuth.GetUserId(HttpContext.Session);
+        var author = string.IsNullOrWhiteSpace(userId) ? null : _authorService.FindAuthorById(userId);
 
         if(author == null)
         {
@@ -81,14 +78,15 @@ public class PublicView : PageModel
 
     public async Task<ActionResult> OnPostToggleFollow(string followeeId)
     {
+        var userId = SessionAuth.GetUserId(HttpContext.Session);
+        
         // grab my current user.
-        if (!_identityService.IsSignedIn(User))
+        if (string.IsNullOrWhiteSpace(userId))
         {
-            // throw some error idk.
             return RedirectToPage();
         }
 
-        AuthorDTO? author = await _identityService.GetCurrentIdentityAuthor(User); 
+        var author = _authorService.FindAuthorById(userId);
 
         if(author == null)
         {
@@ -109,29 +107,31 @@ public class PublicView : PageModel
 
     public async Task<string> GetUserName()
     {
-        AuthorDTO? author = await _identityService.GetCurrentIdentityAuthor(User);
-
-        if (author == null)
+        var userId = SessionAuth.GetUserId(HttpContext.Session);
+        
+        if (string.IsNullOrWhiteSpace(userId))
+        {
             return string.Empty;
-
-        return author?.Name ?? "Anon";
+        }
+        return userId ?? "Anon";
     }
 
     //handle likes and dislikes
     public async Task<IActionResult> OnPostCheepLikeAsync(int cheepId, string userId)
     {
-        if (!_identityService.IsSignedIn(User))
-            return RedirectToPage();
-
-        var currentAuthor = await _identityService.GetCurrentIdentityAuthor(User);
+        var sessionUserId = SessionAuth.GetUserId(HttpContext.Session);
+        var currentAuthor = string.IsNullOrWhiteSpace(sessionUserId) ? null : _authorService.FindAuthorById(sessionUserId);
+               
         if (currentAuthor == null)
+        {
             return RedirectToPage();
+        }
+        
+        var like = await _cheepService.GetLikeAsync(cheepId, currentAuthor.Id, true);
 
-        Like like = await _cheepService.GetLikeAsync(cheepId, currentAuthor.Id, true);
+        var authorId = _cheepService.GetById(cheepId)!.AuthorId;
 
-        string authorId = _cheepService.GetById(cheepId)!.AuthorId;
-
-        int karmaChange = 0;
+        var karmaChange = 0;
 
         if (like.likeStatus == -1) { karmaChange = 20; }
         else if (like.likeStatus == 0) { karmaChange = 10; }
@@ -147,10 +147,8 @@ public class PublicView : PageModel
 
     public async Task<IActionResult> OnPostCheepDislikeAsync(int cheepId, string userId)
     {
-        if (!_identityService.IsSignedIn(User))
-            return RedirectToPage();
-
-        var currentAuthor = await _identityService.GetCurrentIdentityAuthor(User);
+        var  sessionUserId = SessionAuth.GetUserId(HttpContext.Session);
+        var currentAuthor = string.IsNullOrWhiteSpace(sessionUserId) ? null : _authorService.FindAuthorById(sessionUserId);
         if (currentAuthor == null)
             return RedirectToPage();
 

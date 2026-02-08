@@ -1,16 +1,14 @@
 @using Chirp.Application.Services.Interface
-@inject IIdentityUserService identityUserService
-
+@using Chirp.Web.Services
+@inject IAuthorService authorService
 
 @{
-    var isSignedIn = User?.Identity?.IsAuthenticated == true;
-    Chirp.Application.DTO.AuthorDTO? currentAuthor = null;
-
-    if (isSignedIn)
-    {
-        currentAuthor = await identityUserService.GetCurrentIdentityAuthor(User!);
-    }
+    var userId = SessionAuth.GetUserId(Context.Session);
+    var isSignedIn = !string.IsNullOrWhiteSpace(userId);
+    var currentAuthor = isSignedIn ? authorService.FindAuthorById(userId!) : null;
 }
+
+
 
 <!DOCTYPE html>
 <html lang="en">
