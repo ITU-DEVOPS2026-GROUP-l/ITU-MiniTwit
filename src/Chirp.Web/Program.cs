@@ -7,6 +7,7 @@ using Chirp.Razor.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Chirp.Application.Services.Implementation;
 using Chirp.Application.Services.Interface;
+using Microsoft.Data.Sqlite;
 
 // -----------------------------------------------------------------------------
 // Application configuration entry point for the Chirp web app.
@@ -72,6 +73,9 @@ public partial class Program
 
 
         builder.Logging.AddFilter("Microsoft.EntityFrameworkCore", LogLevel.None);
+        
+        //Ensures sqlite database connectionstring and directory available in docker.
+        EnsureSqliteDirectory(builder);
 
         builder.Services.AddDbContext<ChirpDBContext>(options =>
         {
@@ -139,5 +143,30 @@ public partial class Program
         app.MapFallbackToPage("/PublicView");
 
         return app;
+    }
+    
+    //Creates a directory for the SQLite database on containers such as docker.
+    private static void EnsureSqliteDirectory(WebApplicationBuilder builder)
+    {
+        var connectionString = builder.Configuration.GetConnectionString("ChirpDBConnection");
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            return;
+        }
+
+        var sqliteBuilder = new SqliteConnectionStringBuilder(connectionString);
+        if (string.IsNullOrWhiteSpace(sqliteBuilder.DataSource))
+        {
+            return;
+        }
+
+        var dataSource = sqliteBuilder.DataSource;
+        var fullPath = Path.IsPathRooted(dataSource) ? dataSource : Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, dataSource));
+
+        var directory = Path.GetDirectoryName(fullPath);
+        if (!string.IsNullOrWhiteSpace(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
     }
 }
