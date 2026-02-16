@@ -13,18 +13,24 @@ using Microsoft.Extensions.Logging;
 
 namespace Chirp.Web.Areas.Identity.Pages.Account
 {
+    [AllowAnonymous]
     public class LogoutModel : PageModel
     {
         private readonly ILogger<LogoutModel> _logger;
+        private readonly SignInManager<Chirp.Core.Models.Author> _signInManager;
 
-        public LogoutModel(ILogger<LogoutModel> logger)
+        public LogoutModel(
+            ILogger<LogoutModel> logger,
+            SignInManager<Chirp.Core.Models.Author> signInManager)
         {
             _logger = logger;
+            _signInManager = signInManager;
         }
 
         public async Task<IActionResult> OnGet(string returnUrl = "/")
         {
             SessionAuth.SignOut(HttpContext.Session);
+            await _signInManager.SignOutAsync();
             _logger.LogInformation("User logged out.");
             return LocalRedirect(returnUrl ?? "/");
         }
@@ -32,6 +38,7 @@ namespace Chirp.Web.Areas.Identity.Pages.Account
         public async Task<IActionResult> OnPost(string returnUrl = "/")
         {
             SessionAuth.SignOut(HttpContext.Session);
+            await _signInManager.SignOutAsync();
             _logger.LogInformation("User logged out.");
             return LocalRedirect(returnUrl ?? "/");
         }

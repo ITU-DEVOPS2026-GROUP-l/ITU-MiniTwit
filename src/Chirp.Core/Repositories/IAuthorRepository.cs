@@ -12,6 +12,8 @@ namespace Chirp.Core.Repositories
         /// <returns>Returns an Enumerable collection of <see cref="Cheep"/> objects representing cheeps from all authors for the requested page.
         /// If no cheeps are found. the collection will be empty. </returns>
         public Author? FindAuthorById(string id);
+        
+        public Author? FindAuthorByUserName(string username);
 
         /// <summary>
         /// Retrieves the collection of authors who follow the specified author.

@@ -28,6 +28,25 @@ namespace Chirp.Razor.Repositories
         }
 
         /// <summary>
+        /// Retrieves the author with the specified username, if one exists.
+        /// </summary>
+        /// <param name="username">The username to find. Cannot be null or empty.</param>
+        /// <returns>The matching <see cref="Author"/> or null if not found.</returns>
+        public Author? FindAuthorByUserName(string username)
+        {
+            if (string.IsNullOrWhiteSpace(username))
+            {
+                return null;
+            }
+
+            var trimmed = username.Trim();
+            var normalized = trimmed.ToUpperInvariant();
+
+            return _context.Authors
+                .FirstOrDefault(a => a.UserName == trimmed || a.NormalizedUserName == normalized);
+        }
+
+        /// <summary>
         /// Retrieves the collection of authors who follow the specified author.
         /// </summary>
         /// <param name="author">The author whose followers are to be retrieved. Cannot be null.</param>

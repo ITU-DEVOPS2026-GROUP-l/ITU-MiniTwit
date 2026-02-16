@@ -28,10 +28,14 @@ namespace Chirp.Web.Controllers
     { 
         private const int DefaultPageSize = 100;
         private readonly ICheepRepository _cheepRepository;
+        private readonly IAuthorRepository _authorRepository;
 
-        public MinitwitApiController(ICheepRepository cheepRepository)
+        public MinitwitApiController(
+            ICheepRepository cheepRepository,
+            IAuthorRepository authorRepository)
         {
             _cheepRepository = cheepRepository;
+            _authorRepository = authorRepository;
         }
 
         /// <summary>
@@ -53,22 +57,12 @@ namespace Chirp.Web.Controllers
         [SwaggerResponse(statusCode: 403, type: typeof(ErrorResponse), description: "Unauthorized - Must include correct Authorization header")]
         public virtual IActionResult GetFollow([FromRoute (Name = "username")][Required]string username, [FromHeader (Name = "Authorization")][Required()]string authorization, [FromQuery (Name = "latest")]int? latest, [FromQuery (Name = "no")]int? no)
         {
-
-            //TODO: Uncomment the next line to return response 200 or use other options such as return this.NotFound(), return this.BadRequest(..), ...
-            // return StatusCode(200, default);
-            //TODO: Uncomment the next line to return response 403 or use other options such as return this.NotFound(), return this.BadRequest(..), ...
-            // return StatusCode(403, default);
-            //TODO: Uncomment the next line to return response 404 or use other options such as return this.NotFound(), return this.BadRequest(..), ...
-            // return StatusCode(404);
-            string exampleJson = null;
-            exampleJson = "{\n  \"follows\" : [ \"Helge\", \"John\" ]\n}";
-            exampleJson = "{\n  \"error_msg\" : \"You are not authorized to use this resource!\",\n  \"status\" : 403\n}";
-            
-            var example = exampleJson != null
-            ? JsonConvert.DeserializeObject<FollowsResponse>(exampleJson)
-            : default;
-            //TODO: Change the data returned
-            return new ObjectResult(example);
+            Author? author = _authorRepository.FindAuthorByUserName(username);
+            if (author == null)
+            {
+                return StatusCode(404);
+            }
+            return Ok(MapFollowersToFollowsResponse(_authorRepository.GetFollowing(author).ToList()));
         }
 
         /// <summary>
@@ -247,15 +241,21 @@ namespace Chirp.Web.Controllers
 
         private static Message MapCheepToMessage(Cheep cheep)
         {
-            var authorName = cheep.Author?.Name
-                ?? cheep.Author?.UserName
-                ?? cheep.AuthorId;
+            var authorName = cheep.Author?.Name ?? cheep.Author?.UserName ?? cheep.AuthorId;
 
             return new Message
             {
                 Content = cheep.Text,
                 User = authorName,
                 PubDate = cheep.TimeStamp.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)
+            };
+        }
+
+        private static FollowsResponse MapFollowersToFollowsResponse(IEnumerable<Author> followers)
+        {
+            return new FollowsResponse()
+            {
+                Follows = followers.Select(f => f.Name).ToList()
             };
         }
     }
