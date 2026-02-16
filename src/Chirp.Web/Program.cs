@@ -139,6 +139,7 @@ public partial class Program
         
         app.UseSession();
 
+        app.MapControllers();
         app.MapRazorPages();
         app.MapFallbackToPage("/PublicView");
 
