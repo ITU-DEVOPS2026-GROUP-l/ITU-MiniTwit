@@ -9,6 +9,9 @@
  */
 
 using System.ComponentModel.DataAnnotations;
+using System.Globalization;
+using Chirp.Core.Models;
+using Chirp.Core.Repositories;
 using Chirp.Web.Attributes;
 using Swashbuckle.AspNetCore.Annotations;
 using Chirp.Web.Models;
@@ -23,6 +26,14 @@ namespace Chirp.Web.Controllers
     [ApiController]
     public class MinitwitApiController : ControllerBase
     { 
+        private const int DefaultPageSize = 100;
+        private readonly ICheepRepository _cheepRepository;
+
+        public MinitwitApiController(ICheepRepository cheepRepository)
+        {
+            _cheepRepository = cheepRepository;
+        }
+
         /// <summary>
         /// 
         /// </summary>
@@ -79,7 +90,9 @@ namespace Chirp.Web.Controllers
             // return StatusCode(200, default);
             //TODO: Uncomment the next line to return response 500 or use other options such as return this.NotFound(), return this.BadRequest(..), ...
             // return StatusCode(500, default);
-            return Ok(new LatestValue { Latest = 0 });
+            var latestCheep = _cheepRepository.GetAll(1, 1).FirstOrDefault();
+            var latestId = latestCheep?.CheepId ?? 0;
+            return Ok(new LatestValue { Latest = latestId });
         }
 
         /// <summary>
@@ -104,15 +117,13 @@ namespace Chirp.Web.Controllers
             // return StatusCode(200, default);
             //TODO: Uncomment the next line to return response 403 or use other options such as return this.NotFound(), return this.BadRequest(..), ...
             // return StatusCode(403, default);
-            string exampleJson = null;
-            exampleJson = "[ {\n  \"pub_date\" : \"2019-12-01 12:00:00\",\n  \"user\" : \"Helge\",\n  \"content\" : \"Hello, World!\"\n}, {\n  \"pub_date\" : \"2019-12-01 12:00:00\",\n  \"user\" : \"Helge\",\n  \"content\" : \"Hello, World!\"\n} ]";
-            exampleJson = "{\n  \"error_msg\" : \"You are not authorized to use this resource!\",\n  \"status\" : 403\n}";
-            
-            var example = exampleJson != null
-            ? JsonConvert.DeserializeObject<List<Message>>(exampleJson)
-            : default;
-            //TODO: Change the data returned
-            return new ObjectResult(example);
+            var limit = no.HasValue && no.Value > 0 ? no.Value : DefaultPageSize;
+            var messages = _cheepRepository
+                .GetAll(1, limit)
+                .Select(MapCheepToMessage)
+                .ToList();
+
+            return Ok(messages);
         }
 
         /// <summary>
@@ -232,6 +243,20 @@ namespace Chirp.Web.Controllers
             // return StatusCode(400, default);
 
             throw new NotImplementedException();
+        }
+
+        private static Message MapCheepToMessage(Cheep cheep)
+        {
+            var authorName = cheep.Author?.Name
+                ?? cheep.Author?.UserName
+                ?? cheep.AuthorId;
+
+            return new Message
+            {
+                Content = cheep.Text,
+                User = authorName,
+                PubDate = cheep.TimeStamp.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)
+            };
         }
     }
 }
