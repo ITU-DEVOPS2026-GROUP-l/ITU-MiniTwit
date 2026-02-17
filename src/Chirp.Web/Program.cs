@@ -54,18 +54,7 @@ public partial class Program
             .AddScheme<AuthenticationSchemeOptions, BasicAuthenticationHaHandler>(
                 "BasicAuthentication", null);
         
-        builder.Services.AddAuthorization();
-        
-        builder.Services.AddControllers(options =>
-        {
-            var policy = new AuthorizationPolicyBuilder()
-                .AddAuthenticationSchemes("BasicAuthentication")
-                .RequireAuthenticatedUser()
-                .Build();
-
-            options.Filters.Add(new AuthorizeFilter(policy));
-        });
-
+        builder.Services.AddAuthorizationBuilder().AddPolicy("ApiPolicy", policy => policy.AddAuthenticationSchemes("BasicAuthentication").RequireAuthenticatedUser());
 
         if (!string.IsNullOrWhiteSpace(contentRoot))
         {
