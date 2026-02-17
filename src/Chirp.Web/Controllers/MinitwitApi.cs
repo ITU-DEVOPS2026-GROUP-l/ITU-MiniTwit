@@ -59,14 +59,15 @@ namespace Chirp.Web.Controllers
         [SwaggerOperation("GetFollow")]
         [SwaggerResponse(statusCode: 200, type: typeof(FollowsResponse), description: "Success")]
         [SwaggerResponse(statusCode: 403, type: typeof(ErrorResponse), description: "Unauthorized - Must include correct Authorization header")]
+        [SwaggerResponse(statusCode: 404, type: typeof(ErrorResponse), description: "Nothing here - No user with this name has been found")]
         public virtual IActionResult GetFollow([FromRoute (Name = "username")][Required]string username, [FromHeader (Name = "Authorization")][Required()]string authorization, [FromQuery (Name = "latest")]int? latest, [FromQuery (Name = "no")]int? no)
         {
-            Author? author = _authorRepository.FindAuthorByUserName(username);
-            if (author == null)
+            var author = _authorRepository.FindAuthorByUserName(username);
+            if (author != null)
             {
-                return StatusCode(404);
+                return Ok(MapFollowersToFollowsResponse(_authorRepository.GetFollowing(author).ToList()));
             }
-            return Ok(MapFollowersToFollowsResponse(_authorRepository.GetFollowing(author).ToList()));
+            return StatusCode(404);
         }
 
         /// <summary>
@@ -83,11 +84,6 @@ namespace Chirp.Web.Controllers
         [SwaggerResponse(statusCode: 500, type: typeof(ErrorResponse), description: "Internal Server Error")]
         public virtual IActionResult GetLatestValue()
         {
-
-            //TODO: Uncomment the next line to return response 200 or use other options such as return this.NotFound(), return this.BadRequest(..), ...
-            // return StatusCode(200, default);
-            //TODO: Uncomment the next line to return response 500 or use other options such as return this.NotFound(), return this.BadRequest(..), ...
-            // return StatusCode(500, default);
             var latestCheep = _cheepRepository.GetAll(1, 1).FirstOrDefault();
             var latestId = latestCheep?.CheepId ?? 0;
             return Ok(new LatestValue { Latest = latestId });
@@ -110,17 +106,11 @@ namespace Chirp.Web.Controllers
         [SwaggerResponse(statusCode: 403, type: typeof(ErrorResponse), description: "Unauthorized - Must include correct Authorization header")]
         public virtual IActionResult GetMessages([FromHeader (Name = "Authorization")][Required()]string authorization, [FromQuery (Name = "latest")]int? latest, [FromQuery (Name = "no")]int? no)
         {
-
-            //TODO: Uncomment the next line to return response 200 or use other options such as return this.NotFound(), return this.BadRequest(..), ...
-            // return StatusCode(200, default);
-            //TODO: Uncomment the next line to return response 403 or use other options such as return this.NotFound(), return this.BadRequest(..), ...
-            // return StatusCode(403, default);
             var limit = no.HasValue && no.Value > 0 ? no.Value : DefaultPageSize;
             var messages = _cheepRepository
                 .GetAll(1, limit)
                 .Select(MapCheepToMessage)
                 .ToList();
-
             return Ok(messages);
         }
 
@@ -143,22 +133,15 @@ namespace Chirp.Web.Controllers
         [SwaggerResponse(statusCode: 403, type: typeof(ErrorResponse), description: "Unauthorized - Must include correct Authorization header")]
         public virtual IActionResult GetMessagesPerUser([FromRoute (Name = "username")][Required]string username, [FromHeader (Name = "Authorization")][Required()]string authorization, [FromQuery (Name = "latest")]int? latest, [FromQuery (Name = "no")]int? no)
         {
-
-            //TODO: Uncomment the next line to return response 200 or use other options such as return this.NotFound(), return this.BadRequest(..), ...
-            // return StatusCode(200, default);
-            //TODO: Uncomment the next line to return response 403 or use other options such as return this.NotFound(), return this.BadRequest(..), ...
-            // return StatusCode(403, default);
-            //TODO: Uncomment the next line to return response 404 or use other options such as return this.NotFound(), return this.BadRequest(..), ...
-            // return StatusCode(404);
-            string exampleJson = null;
-            exampleJson = "[ {\n  \"pub_date\" : \"2019-12-01 12:00:00\",\n  \"user\" : \"Helge\",\n  \"content\" : \"Hello, World!\"\n}, {\n  \"pub_date\" : \"2019-12-01 12:00:00\",\n  \"user\" : \"Helge\",\n  \"content\" : \"Hello, World!\"\n} ]";
-            exampleJson = "{\n  \"error_msg\" : \"You are not authorized to use this resource!\",\n  \"status\" : 403\n}";
+            var author =  _authorRepository.FindAuthorByUserName(username);
             
-            var example = exampleJson != null
-            ? JsonConvert.DeserializeObject<List<Message>>(exampleJson)
-            : default;
-            //TODO: Change the data returned
-            return new ObjectResult(example);
+            if (author == null) return StatusCode(404);
+            
+            var messages = _cheepRepository
+                .GetByAuthorId(author.Id)
+                .Select(MapCheepToMessage)
+                .ToList();
+            return Ok(messages);
         }
 
         /// <summary>
@@ -180,15 +163,38 @@ namespace Chirp.Web.Controllers
         [SwaggerResponse(statusCode: 403, type: typeof(ErrorResponse), description: "Unauthorized - Must include correct Authorization header")]
         public virtual IActionResult PostFollow([FromRoute (Name = "username")][Required]string username, [FromHeader (Name = "Authorization")][Required()]string authorization, [FromBody]FollowAction payload, [FromQuery (Name = "latest")]int? latest)
         {
+            if (payload == null) return BadRequest();
+            
+            var follower = _authorRepository.FindAuthorByUserName(username);
+            if (follower == null) return StatusCode(404);
 
-            //TODO: Uncomment the next line to return response 204 or use other options such as return this.NotFound(), return this.BadRequest(..), ...
-            // return StatusCode(204);
-            //TODO: Uncomment the next line to return response 403 or use other options such as return this.NotFound(), return this.BadRequest(..), ...
-            // return StatusCode(403, default);
-            //TODO: Uncomment the next line to return response 404 or use other options such as return this.NotFound(), return this.BadRequest(..), ...
-            // return StatusCode(404);
+            var hasFollow = !string.IsNullOrWhiteSpace(payload?.Follow);
+            var hasUnfollow = !string.IsNullOrWhiteSpace(payload?.Unfollow);
 
-            throw new NotImplementedException();
+            if (hasFollow && hasUnfollow) return StatusCode(403);
+            
+            //follow logic
+            if (hasFollow)
+            {
+                var followee = _authorRepository.FindAuthorByUserName(payload?.Follow);
+                if (followee != null)
+                {
+                    _authorRepository.FollowAuthor(follower, followee);
+                    return Ok();
+                }
+            }
+            
+            //Unfollow logic
+            if (hasUnfollow)
+            {
+                var followee = _authorRepository.FindAuthorByUserName(payload?.Unfollow);
+                if (followee != null)
+                {
+                    _authorRepository.FollowAuthor(follower, followee);
+                    return Ok();
+                }
+            }
+            return BadRequest();
         }
 
         /// <summary>
