@@ -5,10 +5,10 @@ using Microsoft.Extensions.Options;
 using System.Text.Encodings.Web;
 using Chirp.Web.Models;
 
-public class BasicAuthenticationHa 
+public class BasicAuthenticationHaHandler 
     : AuthenticationHandler<AuthenticationSchemeOptions>
 {
-    public BasicAuthenticationHa(
+    public BasicAuthenticationHaHandler(
         IOptionsMonitor<AuthenticationSchemeOptions> options,
         ILoggerFactory logger,
         UrlEncoder encoder,
