@@ -51,7 +51,7 @@ public partial class Program
         
         builder.Services
             .AddAuthentication("BasicAuthentication")
-            .AddScheme<AuthenticationSchemeOptions, BasicAuthenticationHandler>(
+            .AddScheme<AuthenticationSchemeOptions, BasicAuthenticationHa>(
                 "BasicAuthentication", null);
         
         builder.Services.AddAuthorization();
