@@ -11,12 +11,16 @@
 using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.Text;
+using Chirp.Application.DTO;
+using Chirp.Application.Services.Interface;
 using Chirp.Core.Models;
 using Chirp.Core.Repositories;
 using Chirp.Web.Attributes;
 using Swashbuckle.AspNetCore.Annotations;
 using Chirp.Web.Models;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.VisualBasic;
 using Newtonsoft.Json;
 
 namespace Chirp.Web.Controllers
@@ -31,15 +35,18 @@ namespace Chirp.Web.Controllers
         private const string ExpectedCaller = "simulator";
         private const string ExpectedCallerPassword = "super_safe!";
         private const int DefaultPageSize = 100;
-        private readonly ICheepRepository _cheepRepository;
-        private readonly IAuthorRepository _authorRepository;
+        private readonly ICheepService _cheepService;
+        private readonly IAuthorService _authorService;
+        private readonly UserManager<Author> _userManager;
 
         public MinitwitApiController(
-            ICheepRepository cheepRepository,
-            IAuthorRepository authorRepository)
+            ICheepService cheepService,
+            IAuthorService authorService,
+            UserManager<Author> userManager)
         {
-            _cheepRepository = cheepRepository;
-            _authorRepository = authorRepository;
+            _userManager = userManager;
+            _cheepService = cheepService;
+            _authorService = authorService;
         }
 
         /// <summary>
@@ -62,10 +69,10 @@ namespace Chirp.Web.Controllers
         [SwaggerResponse(statusCode: 404, type: typeof(ErrorResponse), description: "Nothing here - No user with this name has been found")]
         public virtual IActionResult GetFollow([FromRoute (Name = "username")][Required]string username, [FromHeader (Name = "Authorization")][Required()]string authorization, [FromQuery (Name = "latest")]int? latest, [FromQuery (Name = "no")]int? no)
         {
-            var author = _authorRepository.FindAuthorByUserName(username);
+            var author = _authorService.FindAuthorByUsername(username);
             if (author != null)
             {
-                return Ok(MapFollowersToFollowsResponse(_authorRepository.GetFollowing(author).ToList()));
+                return Ok(MapFollowersToFollowsResponse(_authorService.GetFollowing(author.Id).ToList()));
             }
             return StatusCode(404);
         }
@@ -84,8 +91,8 @@ namespace Chirp.Web.Controllers
         [SwaggerResponse(statusCode: 500, type: typeof(ErrorResponse), description: "Internal Server Error")]
         public virtual IActionResult GetLatestValue()
         {
-            var latestCheep = _cheepRepository.GetAll(1, 1).FirstOrDefault();
-            var latestId = latestCheep?.CheepId ?? 0;
+            var latestCheep = _cheepService.GetCheeps(1, 1).FirstOrDefault();
+            var latestId = latestCheep?.cheepId;
             return Ok(new LatestValue { Latest = latestId });
         }
 
@@ -107,8 +114,8 @@ namespace Chirp.Web.Controllers
         public virtual IActionResult GetMessages([FromHeader (Name = "Authorization")][Required()]string authorization, [FromQuery (Name = "latest")]int? latest, [FromQuery (Name = "no")]int? no)
         {
             var limit = no.HasValue && no.Value > 0 ? no.Value : DefaultPageSize;
-            var messages = _cheepRepository
-                .GetAll(1, limit)
+            var messages = _cheepService
+                .GetCheeps(1, limit)
                 .Select(MapCheepToMessage)
                 .ToList();
             return Ok(messages);
@@ -133,12 +140,12 @@ namespace Chirp.Web.Controllers
         [SwaggerResponse(statusCode: 403, type: typeof(ErrorResponse), description: "Unauthorized - Must include correct Authorization header")]
         public virtual IActionResult GetMessagesPerUser([FromRoute (Name = "username")][Required]string username, [FromHeader (Name = "Authorization")][Required()]string authorization, [FromQuery (Name = "latest")]int? latest, [FromQuery (Name = "no")]int? no)
         {
-            var author =  _authorRepository.FindAuthorByUserName(username);
+            var author =  _authorService.FindAuthorByUsername(username);
             
             if (author == null) return StatusCode(404);
             
-            var messages = _cheepRepository
-                .GetByAuthorId(author.Id)
+            var messages = _cheepService
+                .GetCheepsFromAuthorId(author.Id)
                 .Select(MapCheepToMessage)
                 .ToList();
             return Ok(messages);
@@ -165,7 +172,7 @@ namespace Chirp.Web.Controllers
         {
             if (payload == null) return BadRequest();
             
-            var follower = _authorRepository.FindAuthorByUserName(username);
+            var follower = _authorService.FindAuthorByUsername(username);
             if (follower == null) return StatusCode(404);
 
             var hasFollow = !string.IsNullOrWhiteSpace(payload?.Follow);
@@ -176,10 +183,10 @@ namespace Chirp.Web.Controllers
             //follow logic
             if (hasFollow)
             {
-                var followee = _authorRepository.FindAuthorByUserName(payload?.Follow);
+                AuthorDTO? followee = _authorService.FindAuthorByUsername(payload.Follow);
                 if (followee != null)
                 {
-                    _authorRepository.FollowAuthor(follower, followee);
+                    _authorService.FollowAuthor(follower.Id, followee.Id);
                     return Ok();
                 }
             }
@@ -187,10 +194,10 @@ namespace Chirp.Web.Controllers
             //Unfollow logic
             if (hasUnfollow)
             {
-                var followee = _authorRepository.FindAuthorByUserName(payload?.Unfollow);
+                AuthorDTO followee = _authorService.FindAuthorByUsername(payload.Unfollow);
                 if (followee != null)
                 {
-                    _authorRepository.FollowAuthor(follower, followee);
+                    _authorService.FollowAuthor(follower.Id, followee.Id);
                     return Ok();
                 }
             }
@@ -216,23 +223,16 @@ namespace Chirp.Web.Controllers
         public virtual IActionResult PostMessagesPerUser([FromRoute (Name = "username")][Required]string username, [FromHeader (Name = "Authorization")][Required()]string authorization, [FromBody]PostMessage payload, [FromQuery (Name = "latest")]int? latest)
         {
             
-            Author author = _authorRepository.FindAuthorByUserName(username);
+            AuthorDTO? author = _authorService.FindAuthorByUsername(username);
 
             if (author == null)
             {
-                return StatusCode()
+                return NotFound();
             }
             
-            _cheepRepository.AddCheep();
-            
-            //TODO: Uncomment the next line to return response 204 or use other options such as return this.NotFound(), return this.BadRequest(..), ...
-            // return StatusCode(204);
-            //TODO: Uncomment the next line to return response 403 or use other options such as return this.NotFound(), return this.BadRequest(..), ...
-            // return StatusCode(403, default);
+            _cheepService.AddCheep(payload.Content,author.Id);
 
-            
-            
-            throw new NotImplementedException();
+            return StatusCode(204);
         }
 
         /// <summary>
@@ -251,32 +251,87 @@ namespace Chirp.Web.Controllers
         [SwaggerResponse(statusCode: 400, type: typeof(ErrorResponse), description: "Bad Request | Possible reasons:  - missing username  - invalid email  - password missing  - username already taken")]
         public virtual IActionResult PostRegister([FromBody]RegisterRequest payload, [FromQuery (Name = "latest")]int? latest)
         {
+            
+            if (string.IsNullOrWhiteSpace(payload.Username))
+            {
+                return BadRequest(new ErrorResponse
+                {
+                    ErrorMsg = "Missing username",
+                    Status = 404
+                });
+            }
+            
+            if (string.IsNullOrWhiteSpace(payload.Pwd))
+            {
+                return BadRequest(new ErrorResponse
+                {
+                    ErrorMsg = "Missing Password",
+                    Status = 404
+                });
+            }
 
-            //TODO: Uncomment the next line to return response 204 or use other options such as return this.NotFound(), return this.BadRequest(..), ...
-            // return StatusCode(204);
-            //TODO: Uncomment the next line to return response 400 or use other options such as return this.NotFound(), return this.BadRequest(..), ...
-            // return StatusCode(400, default);
+            if (string.IsNullOrWhiteSpace(payload.Email))
+            {
+                return BadRequest(new ErrorResponse
+                {
+                    ErrorMsg = "Missing Email",
+                    Status = 404
+                });
+            }
+            
+            AuthorDTO? author = _authorService.FindAuthorByUsername(payload.Username);
+            
+            if (author == null || !string.IsNullOrWhiteSpace(author.Name)) {
+                
+                return BadRequest(new ErrorResponse
+                {
+                    ErrorMsg = "username already taken",
+                    Status = 404
+                });
+            }
+            
+            author = _authorService.FindAuthorByEmail(payload.Email);
+            
+            if (author == null || !string.IsNullOrWhiteSpace(author.Email)) {
+                
+                return BadRequest(new ErrorResponse
+                {
+                    ErrorMsg = "invalid email",
+                    Status = 404
+                });
+            }
 
-            throw new NotImplementedException();
+            Author newAuthor = new Author
+            {
+                UserName = payload.Username,
+                Email = payload.Email
+            };
+            
+            var result = _userManager.CreateAsync(newAuthor, payload.Pwd).GetAwaiter().GetResult();
+
+            if (!result.Succeeded)
+            {
+                return BadRequest(result.Errors);
+            }
+
+            return NoContent();
         }
 
-        private static Message MapCheepToMessage(Cheep cheep)
+        private static Message MapCheepToMessage(CheepDTO cheep)
         {
-            var authorName = cheep.Author?.Name ?? cheep.Author?.UserName ?? cheep.AuthorId;
-
             return new Message
             {
-                Content = cheep.Text,
-                User = authorName,
-                PubDate = cheep.TimeStamp.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)
+                Content = cheep.Message,
+                User = cheep.Author,
+                PubDate = cheep.CreatedDate,
             };
         }
 
-        private static FollowsResponse MapFollowersToFollowsResponse(IEnumerable<Author> followers)
+        private static FollowsResponse MapFollowersToFollowsResponse(IEnumerable<AuthorDTO>? followers)
         {
             return new FollowsResponse()
             {
-                Follows = followers.Select(f => f.Name).ToList()
+                Follows = followers == null ? new List<string>() : followers.Select(f => f.Name).ToList()
             };
         }
 

@@ -11,6 +11,11 @@ namespace Chirp.Application.Services.Interface
         /// <returns>An <see cref="AuthorDTO"/> representing the author with the specified authorID, or null.
         /// if no such author exists.</returns>
         AuthorDTO? FindAuthorById(string name);
+        
+        AuthorDTO? FindAuthorByUsername(string username);
+
+        AuthorDTO? FindAuthorByEmail(string email);
+
 
         /// <summary>
         /// Retrieves a list of followers for the specified author.

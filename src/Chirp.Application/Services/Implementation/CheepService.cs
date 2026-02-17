@@ -24,11 +24,11 @@ namespace Chirp.Application.Services.Implementation
         /// <param name="page">The page number to retrieve. Must be greater than or equal to 1. The first page is 1.</param>
         /// <returns>An <see cref="IEnumerable{CheepDTO}"/> containing cheeps for the specified page. Returns an empty collection
         /// if no cheeps are available for the page.</returns>
-        public IEnumerable<CheepDTO> GetCheeps(int page = 1)
+        public IEnumerable<CheepDTO> GetCheeps(int page = 1, int PageSize = 32)
         {
             return _cheepRepository.GetAll(page, PageSize).Select(CreateCheepDTO).ToList();
         }
-
+        
         /// <summary>
         /// Retrieves a paginated collection of cheeps authored by the specified user.
         /// </summary>

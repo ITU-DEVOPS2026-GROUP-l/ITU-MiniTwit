@@ -19,6 +19,18 @@ namespace Chirp.Application.Services.Implementation
             _repo = repo;
         }
 
+        public AuthorDTO? FindAuthorByUsername(string username)
+        {
+            var author = _repo.FindAuthorByUserName(username);
+
+            if (author == null)
+            {
+                return null;
+            }
+
+            return CreateAuthorDTO(author);
+        }
+        
         /// <summary>
         /// Creates an <see cref="AuthorDTO"/> from an <see cref="Author"/> entity.
         /// If the provided author is null, the method returns null.
@@ -55,6 +67,18 @@ namespace Chirp.Application.Services.Implementation
         public AuthorDTO? FindAuthorById(string authorId)
         {
             var author = _repo.FindAuthorById(authorId);
+
+            if (author == null)
+            {
+                return null;
+            }
+
+            return CreateAuthorDTO(author);
+        }
+
+        public AuthorDTO? FindAuthorByEmail(string email)
+        {
+            var author = _repo.FindAuthorByEmail(email);
 
             if (author == null)
             {

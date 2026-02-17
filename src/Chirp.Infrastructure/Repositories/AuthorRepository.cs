@@ -45,6 +45,20 @@ namespace Chirp.Razor.Repositories
             return _context.Authors
                 .FirstOrDefault(a => a.UserName == trimmed || a.NormalizedUserName == normalized);
         }
+        
+        public Author? FindAuthorByEmail(string email)
+        {
+            if (string.IsNullOrWhiteSpace(email))
+            {
+                return null;
+            }
+
+            var trimmed = email.Trim();
+            var normalized = trimmed.ToUpperInvariant();
+
+            return _context.Authors
+                .FirstOrDefault(a => a.Email == trimmed || a.NormalizedEmail == normalized);
+        }
 
         /// <summary>
         /// Retrieves the collection of authors who follow the specified author.

@@ -14,6 +14,8 @@ namespace Chirp.Core.Repositories
         public Author? FindAuthorById(string id);
         
         public Author? FindAuthorByUserName(string username);
+        
+        public Author? FindAuthorByEmail(string email);
 
         /// <summary>
         /// Retrieves the collection of authors who follow the specified author.
