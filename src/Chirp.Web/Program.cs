@@ -7,6 +7,9 @@ using Chirp.Razor.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Chirp.Application.Services.Implementation;
 using Chirp.Application.Services.Interface;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.Data.Sqlite;
 
 // -----------------------------------------------------------------------------
@@ -45,6 +48,24 @@ public partial class Program
             ContentRootPath = contentRoot ?? Directory.GetCurrentDirectory(),
             ApplicationName = typeof(Program).Assembly.GetName().Name
         });
+        
+        builder.Services
+            .AddAuthentication("BasicAuthentication")
+            .AddScheme<AuthenticationSchemeOptions, BasicAuthenticationHandler>(
+                "BasicAuthentication", null);
+        
+        builder.Services.AddAuthorization();
+        
+        builder.Services.AddControllers(options =>
+        {
+            var policy = new AuthorizationPolicyBuilder()
+                .AddAuthenticationSchemes("BasicAuthentication")
+                .RequireAuthenticatedUser()
+                .Build();
+
+            options.Filters.Add(new AuthorizeFilter(policy));
+        });
+
 
         if (!string.IsNullOrWhiteSpace(contentRoot))
         {
@@ -140,7 +161,7 @@ public partial class Program
         app.UseSession();
 
         app.MapControllers();
-        app.MapRazorPages();
+        app.MapRazorPages();    
         app.MapFallbackToPage("/PublicView");
 
         return app;

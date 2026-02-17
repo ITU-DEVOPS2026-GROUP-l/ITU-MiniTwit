@@ -10,6 +10,7 @@
 
 using System.ComponentModel.DataAnnotations;
 using System.Globalization;
+using System.Text;
 using Chirp.Core.Models;
 using Chirp.Core.Repositories;
 using Chirp.Web.Attributes;
@@ -26,6 +27,9 @@ namespace Chirp.Web.Controllers
     [ApiController]
     public class MinitwitApiController : ControllerBase
     { 
+        
+        private const string ExpectedCaller = "simulator";
+        private const string ExpectedCallerPassword = "super_safe!";
         private const int DefaultPageSize = 100;
         private readonly ICheepRepository _cheepRepository;
         private readonly IAuthorRepository _authorRepository;
@@ -205,12 +209,23 @@ namespace Chirp.Web.Controllers
         [SwaggerResponse(statusCode: 403, type: typeof(ErrorResponse), description: "Unauthorized - Must include correct Authorization header")]
         public virtual IActionResult PostMessagesPerUser([FromRoute (Name = "username")][Required]string username, [FromHeader (Name = "Authorization")][Required()]string authorization, [FromBody]PostMessage payload, [FromQuery (Name = "latest")]int? latest)
         {
+            
+            Author author = _authorRepository.FindAuthorByUserName(username);
 
+            if (author == null)
+            {
+                return StatusCode()
+            }
+            
+            _cheepRepository.AddCheep();
+            
             //TODO: Uncomment the next line to return response 204 or use other options such as return this.NotFound(), return this.BadRequest(..), ...
             // return StatusCode(204);
             //TODO: Uncomment the next line to return response 403 or use other options such as return this.NotFound(), return this.BadRequest(..), ...
             // return StatusCode(403, default);
 
+            
+            
             throw new NotImplementedException();
         }
 
@@ -258,5 +273,6 @@ namespace Chirp.Web.Controllers
                 Follows = followers.Select(f => f.Name).ToList()
             };
         }
+
     }
 }
