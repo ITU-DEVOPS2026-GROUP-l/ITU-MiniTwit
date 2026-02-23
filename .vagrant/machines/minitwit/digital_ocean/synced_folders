@@ -1,0 +1,1 @@
+{"rsync":{"/minitwit":{"type":"rsync","guestpath":"/minitwit","hostpath":"/home/noah/Documents/ITU-MiniTwit/remote_files","disabled":false,"__vagrantfile":true,"owner":"root","group":"root"}}}
