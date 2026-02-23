@@ -232,7 +232,7 @@ namespace Chirp.Web.Controllers
                     });
                 }
                 _authorService.FollowAuthor(author.Id, followee.Id);
-                return Ok();
+                return NoContent();
             }
             
             //Unfollow logic
@@ -248,8 +248,8 @@ namespace Chirp.Web.Controllers
                     });
                 }
                 
-                _authorService.FollowAuthor(author.Id, followee.Id);
-                return Ok();
+                _authorService.UnfollowAuthor(author.Id, followee.Id);
+                return NoContent();
             }
             
             return BadRequest();
@@ -294,7 +294,7 @@ namespace Chirp.Web.Controllers
             }
             
             _cheepService.AddCheep(payload.Content, author.Id);
-            return StatusCode(204);
+            return StatusCode(200);
         }
 
         /// <summary>
@@ -341,7 +341,8 @@ namespace Chirp.Web.Controllers
                 });
             }
             
-            var author = _authorService.FindAuthorByUsername(payload.Username);
+            AuthorDTO? author = _authorService.FindAuthorByUsername(payload.Username);
+            
             if (author != null) {
                 
                 return BadRequest(new ErrorResponse
@@ -352,6 +353,7 @@ namespace Chirp.Web.Controllers
             }
             
             author = _authorService.FindAuthorByEmail(payload.Email);
+            
             if (author != null) {
                 
                 return BadRequest(new ErrorResponse
@@ -361,17 +363,22 @@ namespace Chirp.Web.Controllers
                 });
             }
 
-            var newAuthor = new Author
+            Author newAuthor = new Author
             {
-                UserName = payload.Username,
                 Name = payload.Username,
-                Email = payload.Email,
+                UserName = payload.Username,
+                Email = payload.Email
             };
             
             var result = _userManager.CreateAsync(newAuthor, payload.Pwd).GetAwaiter().GetResult();
 
             if (!result.Succeeded)
             {
+                foreach (var error in result.Errors)
+                {
+                    Console.WriteLine($"IDENTITY ERROR: {error.Description}");
+                }
+
                 return BadRequest(result.Errors);
             }
 
