@@ -232,7 +232,7 @@ namespace Chirp.Web.Controllers
                     });
                 }
                 _authorService.FollowAuthor(author.Id, followee.Id);
-                return Ok();
+                return NoContent();
             }
             
             //Unfollow logic
@@ -248,8 +248,8 @@ namespace Chirp.Web.Controllers
                     });
                 }
                 
-                _authorService.FollowAuthor(author.Id, followee.Id);
-                return Ok();
+                _authorService.UnfollowAuthor(author.Id, followee.Id);
+                return NoContent();
             }
             
             return BadRequest();
@@ -294,7 +294,7 @@ namespace Chirp.Web.Controllers
             }
             
             _cheepService.AddCheep(payload.Content, author.Id);
-            return StatusCode(204);
+            return StatusCode(200);
         }
 
         /// <summary>
@@ -374,6 +374,11 @@ namespace Chirp.Web.Controllers
 
             if (!result.Succeeded)
             {
+                foreach (var error in result.Errors)
+                {
+                    Console.WriteLine($"IDENTITY ERROR: {error.Description}");
+                }
+
                 return BadRequest(result.Errors);
             }
 
