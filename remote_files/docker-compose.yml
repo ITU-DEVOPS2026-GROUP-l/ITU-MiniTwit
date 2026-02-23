@@ -14,13 +14,3 @@ services:
       - itusqlimage
     ports:
         - '5000:5000'
-
-  itusqlimage:
-    image: ${DOCKER_USERNAME}/mysqlimage
-    container_name: minitwit_mysql
-    networks:
-      - main
-    ports:
-      - '3306:3306'
-    environment:
-        - MYSQL_ROOT_PASSWORD=root

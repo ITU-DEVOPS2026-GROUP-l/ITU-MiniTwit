@@ -45,17 +45,6 @@ jobs:
           tags: ${{ secrets.DOCKER_USERNAME }}/minitwitimage:latest
           cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/minitwitimage:webbuildcache
           cache-to: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/minitwitimage:webbuildcache,mode=max
-
-      - name: Build and push mysqlimage
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./Dockerfile-mysql
-          push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/mysqlimage:latest
-          cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/mysqlimage:mysqlbuildcache
-          cache-to: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/mysqlimage:mysqlbuildcache,mode=max
-
       - name: Test minitwit
         run: |
           docker build -t $DOCKER_USERNAME/minitwittestimage -f Dockerfile-minitwit-tests .
