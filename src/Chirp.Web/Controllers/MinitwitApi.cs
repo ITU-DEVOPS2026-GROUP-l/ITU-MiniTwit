@@ -38,6 +38,7 @@ namespace Chirp.Web.Controllers
         private readonly ICheepService _cheepService;
         private readonly IAuthorService _authorService;
         private readonly UserManager<Author> _userManager;
+        private static int _latest = 0;
 
         public MinitwitApiController(
             ICheepService cheepService,
@@ -69,10 +70,15 @@ namespace Chirp.Web.Controllers
         [SwaggerResponse(statusCode: 404, type: typeof(ErrorResponse), description: "Nothing here - No user with this name has been found")]
         public virtual IActionResult GetFollow([FromRoute (Name = "username")][Required]string username, [FromHeader (Name = "Authorization")][Required()]string authorization, [FromQuery (Name = "latest")]int? latest, [FromQuery (Name = "no")]int? no)
         {
+            if (latest.HasValue)
+            {
+                _latest = latest.Value;
+            }
+            
             var author = _authorService.FindAuthorByUsername(username);
             if (author == null)
             {
-                return BadRequest(new ErrorResponse
+                return NotFound(new ErrorResponse
                 {
                     ErrorMsg = "Missing author",
                     Status = 400
@@ -84,7 +90,7 @@ namespace Chirp.Web.Controllers
                 .Select(f => f?.Name)
                 .ToList();
             
-            return Ok(followers);
+            return Ok(new {follows = followers});
         }
 
         /// <summary>
@@ -95,17 +101,9 @@ namespace Chirp.Web.Controllers
         /// <response code="500">Internal Server Error</response>
         [HttpGet]
         [Route("/latest")]
-        [ValidateModelState]
-        [SwaggerOperation("GetLatestValue")]
-        [SwaggerResponse(statusCode: 200, type: typeof(LatestValue), description: "Success")]
-        [SwaggerResponse(statusCode: 500, type: typeof(ErrorResponse), description: "Internal Server Error")]
-        public virtual IActionResult GetLatestValue()
+        public IActionResult GetLatestValue()
         {
-            var latestCheep = _cheepService
-                .GetCheeps(1, 1)
-                .FirstOrDefault();
-            var latestId = latestCheep?.cheepId;
-            return Ok(new LatestValue { Latest = latestId });
+            return Ok(new { latest = _latest });
         }
 
         /// <summary>
@@ -125,6 +123,11 @@ namespace Chirp.Web.Controllers
         [SwaggerResponse(statusCode: 403, type: typeof(ErrorResponse), description: "Unauthorized - Must include correct Authorization header")]
         public virtual IActionResult GetMessages([FromHeader (Name = "Authorization")][Required()]string authorization, [FromQuery (Name = "latest")]int? latest, [FromQuery (Name = "no")]int? no)
         {
+            if (latest.HasValue)
+            {
+                _latest = latest.Value;
+            }
+            
             var limit = no is > 0 ? no.Value : DefaultPageSize;
             var messages = _cheepService
                 .GetCheeps(1, limit)
@@ -152,6 +155,11 @@ namespace Chirp.Web.Controllers
         [SwaggerResponse(statusCode: 403, type: typeof(ErrorResponse), description: "Unauthorized - Must include correct Authorization header")]
         public virtual IActionResult GetMessagesPerUser([FromRoute (Name = "username")][Required]string username, [FromHeader (Name = "Authorization")][Required()]string authorization, [FromQuery (Name = "latest")]int? latest, [FromQuery (Name = "no")]int? no)
         {
+            if (latest.HasValue)
+            {
+                _latest = latest.Value;
+            }
+            
             var author =  _authorService.FindAuthorByUsername(username);
             if (author == null)
             {
@@ -188,6 +196,11 @@ namespace Chirp.Web.Controllers
         [SwaggerResponse(statusCode: 403, type: typeof(ErrorResponse), description: "Unauthorized - Must include correct Authorization header")]
         public virtual IActionResult PostFollow([FromRoute (Name = "username")][Required]string username, [FromHeader (Name = "Authorization")][Required()]string authorization, [FromBody]FollowAction payload, [FromQuery (Name = "latest")]int? latest)
         {
+            if (latest.HasValue)
+            {
+                _latest = latest.Value;
+            }
+            
             if (payload == null) 
             {
                 return NotFound(new ErrorResponse
@@ -200,10 +213,10 @@ namespace Chirp.Web.Controllers
             var author = _authorService.FindAuthorByUsername(username);
             if (author == null)
             {
-                return BadRequest(new ErrorResponse
+                return NotFound(new ErrorResponse
                 {
                     ErrorMsg = "Missing author",
-                    Status = 400
+                    Status = 404
                 });
             }
 
@@ -215,7 +228,7 @@ namespace Chirp.Web.Controllers
                 return BadRequest(new ErrorResponse
                 {
                     ErrorMsg = "Both follow and unfollow request sent.",
-                    Status = 400
+                    Status = 404
                 });
             }
             
@@ -273,6 +286,11 @@ namespace Chirp.Web.Controllers
         [SwaggerResponse(statusCode: 403, type: typeof(ErrorResponse), description: "Unauthorized - Must include correct Authorization header")]
         public virtual IActionResult PostMessagesPerUser([FromRoute (Name = "username")][Required]string username, [FromHeader (Name = "Authorization")][Required()]string authorization, [FromBody]PostMessage payload, [FromQuery (Name = "latest")]int? latest)
         {
+            if (latest.HasValue)
+            {
+                _latest = latest.Value;
+            }
+            
             var author = _authorService.FindAuthorByUsername(username);
             
             if (author == null)
@@ -313,6 +331,10 @@ namespace Chirp.Web.Controllers
         [SwaggerResponse(statusCode: 400, type: typeof(ErrorResponse), description: "Bad Request | Possible reasons:  - missing username  - invalid email  - password missing  - username already taken")]
         public virtual IActionResult PostRegister([FromBody]RegisterRequest payload, [FromQuery (Name = "latest")]int? latest)
         {
+            if (latest.HasValue)
+            {
+                _latest = latest.Value;
+            }
             
             if (string.IsNullOrWhiteSpace(payload.Username))
             {
