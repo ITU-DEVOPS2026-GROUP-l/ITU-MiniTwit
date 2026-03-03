@@ -312,7 +312,7 @@ namespace Chirp.Web.Controllers
             }
             
             _cheepService.AddCheep(payload.Content, author.Id);
-            return StatusCode(200);
+            return StatusCode(204);
         }
 
         /// <summary>
