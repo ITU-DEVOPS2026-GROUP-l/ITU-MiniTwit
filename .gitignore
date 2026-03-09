@@ -65,3 +65,11 @@ src/Chirp.Web/Chirp.db-wal
 src/Chirp.Web/Chirp.db-shm
 src/Chirp.Web/Chirp.db
 *.db-wal
+out/
+.dotnet/
+.dotnet_home/
+swagger3.json
+
+# Database
+*.db
+*.db-shm
