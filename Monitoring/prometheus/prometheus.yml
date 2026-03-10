@@ -24,6 +24,6 @@ scrape_configs:
     scrape_interval: 5s
 
     static_configs:
-      - targets: ['localhost:5000'] #Needs to target actual site lol <------
+      - targets: ['minitwit:5000'] #Needs to target actual site lol <------
         labels:
           group: 'production'
