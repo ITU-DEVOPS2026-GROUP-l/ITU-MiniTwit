@@ -89,7 +89,7 @@ public partial class Program
 
         builder.Services.AddDbContext<ChirpDBContext>(options =>
         {
-            options.UseSqlite(builder.Configuration.GetConnectionString("ChirpDBConnection"))
+            options.UseNpgsql(builder.Configuration.GetConnectionString("ChirpDBConnection"))
                    .EnableSensitiveDataLogging(false);
         });
 
