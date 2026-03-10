@@ -21,6 +21,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.VisualBasic;
 using Newtonsoft.Json;
+using Prometheus;
 
 namespace Chirp.Web.Controllers
 { 
@@ -315,6 +316,15 @@ namespace Chirp.Web.Controllers
             return StatusCode(204);
         }
 
+        /*
+        [HttpGet]
+        [Route("/metrics")]
+        public virtual IActionResult GetMetrics()
+        {
+            return Response();
+        }
+        */
+        
         /// <summary>
         /// 
         /// </summary>

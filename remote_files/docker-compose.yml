@@ -5,12 +5,35 @@ networks:
 
 services:
 
-  minitwitimage:
-    image: ${DOCKER_USERNAME}/minitwitimage
+  minitwit:
+    image: itu-minitwit
     container_name: minitwit
-    networks:
-      - main
-    depends_on:
-      - itusqlimage
+    network_mode: host
+  
+  prometheus:
+    build:
+      dockerfile: ./Dockerfile
+      context: ../Monitoring/Prometheus
+    image: prometheus_image
+    container_name: Prometheus
+    network_mode: host
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
     ports:
-        - '5000:5000'
+      - "9090"
+  
+  grafana:
+    build:
+      dockerfile: ./Dockerfile
+      context: ../Monitoring/Grafana
+    image: grafana_image
+    container_name: grafana
+    ports: 
+      - "3000"
+    network_mode: host
+    volumes: 
+      - grafana-storage:/var/lib/grafana
+      - ../Monitoring/Grafana/provisioning:/etc/grafana/provisioning
+
+volumes:
+  grafana-storage:
