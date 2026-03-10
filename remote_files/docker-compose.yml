@@ -10,7 +10,5 @@ services:
     container_name: minitwit
     networks:
       - main
-    depends_on:
-      - itusqlimage
     ports:
         - '5000:5000'
