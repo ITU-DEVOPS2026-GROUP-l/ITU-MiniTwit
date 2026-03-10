@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.Data.Sqlite;
+using Prometheus;
 
 // -----------------------------------------------------------------------------
 // Application configuration entry point for the Chirp web app.
@@ -152,13 +153,19 @@ public partial class Program
 
         app.UseAuthentication();
         app.UseAuthorization();
-        
         app.UseSession();
-
+        
+        app.UseHttpMetrics(options =>
+        {
+            options.AddCustomLabel("service", context => "MinitwitApi");
+        });
+        
         app.MapControllers();
-        app.MapRazorPages();    
+        app.MapRazorPages();
         app.MapFallbackToPage("/PublicView");
 
+        app.MapMetrics("/metrics");
+        
         return app;
     }
     
