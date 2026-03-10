@@ -281,6 +281,9 @@ namespace Chirp.Web.Controllers
                             ErrorMsg = "Missing followee",
                             Status = 400
                         });
+                    } else
+                    {
+                        return NoContent();
                     }
                 }
 
