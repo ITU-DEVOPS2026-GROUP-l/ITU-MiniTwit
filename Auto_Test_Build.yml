@@ -1,0 +1,37 @@
+name: Automatic_Test_And_Build
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Restore Playwright tests
+        run: dotnet restore test/nPlaywrightTests/nPlaywrightTests.csproj
+
+      - name: Build
+        run: dotnet build --configuration Debug --no-restore
+
+      - name: Build Playwright tests
+        run: dotnet build test/nPlaywrightTests/nPlaywrightTests.csproj --configuration Debug --no-restore
+
+      - name: Install Playwright browsers
+        run: pwsh test/nPlaywrightTests/bin/Debug/net8.0/playwright.ps1 install --with-deps
+
+      - name: Test
+        run: dotnet test --configuration Debug --no-build --verbosity normal
