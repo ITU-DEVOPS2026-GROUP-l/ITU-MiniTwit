@@ -119,6 +119,14 @@ public partial class Program
         });
         // External login providers are disabled; login state is tracked via session.
 
+        //Add user logging for loki/grafana
+        builder.Services.AddHttpLogging(logging =>
+        {
+            logging.LoggingFields = Microsoft.AspNetCore.HttpLogging.HttpLoggingFields.All;
+            logging.RequestBodyLogLimit = 4096;
+            logging.ResponseBodyLogLimit = 4096;
+        });
+
         
         var app = builder.Build();
 
@@ -149,19 +157,29 @@ public partial class Program
             }
             await next();
         });
+        
+        app.UseHttpLogging();
         app.UseRouting();
-
+        
+        app.Use(async (context, next) =>
+        {
+            var start = DateTime.UtcNow;
+            await next();
+            var duration = DateTime.UtcNow - start;
+            var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+            logger.LogInformation(
+                "REQUEST {Method} {Path} {StatusCode} {Duration}ms from {IP}",
+                context.Request.Method,
+                context.Request.Path,
+                context.Response.StatusCode,
+                duration.TotalMilliseconds,
+                context.Connection.RemoteIpAddress
+            );
+        });
+        
         app.UseAuthentication();
         app.UseAuthorization();
         app.UseSession();
-        app.UseHttpLogging();
-        
-        builder.Services.AddHttpLogging(logging =>
-        {
-            logging.LoggingFields = Microsoft.AspNetCore.HttpLogging.HttpLoggingFields.All;
-            logging.RequestBodyLogLimit = 4096;
-            logging.ResponseBodyLogLimit = 4096;
-        });
         
         app.UseHttpMetrics(options =>
         {
