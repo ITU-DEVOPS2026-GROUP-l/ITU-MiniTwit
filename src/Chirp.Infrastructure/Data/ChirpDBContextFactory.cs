@@ -1,7 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore;
+using System;
+using System.IO;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
-using System.IO;
 
 namespace Chirp.Core.Data
 {
@@ -27,14 +28,51 @@ namespace Chirp.Core.Data
             var configuration = new ConfigurationBuilder()
                 .SetBasePath(Path.Combine(Directory.GetCurrentDirectory(), "../Chirp.Web"))
                 .AddJsonFile("appsettings.json")
+                .AddJsonFile("appsettings.Development.json", optional: true)
+                .AddEnvironmentVariables()
                 .Build();
 
-            var connectionString = configuration.GetConnectionString("ChirpDBConnection");
+            var connectionString = configuration.GetConnectionString("ChirpDBConnection")
+                ?? throw new InvalidOperationException("Connection string 'ChirpDBConnection' is not configured.");
+            var databaseProvider = GetDatabaseProvider(configuration);
 
             var optionsBuilder = new DbContextOptionsBuilder<ChirpDBContext>();
-            optionsBuilder.UseSqlite(connectionString);
+            switch (databaseProvider)
+            {
+                case DatabaseProvider.PostgreSql:
+                    optionsBuilder.UseNpgsql(connectionString);
+                    break;
+                case DatabaseProvider.Sqlite:
+                default:
+                    optionsBuilder.UseSqlite(connectionString);
+                    break;
+            }
 
             return new ChirpDBContext(optionsBuilder.Options);
+        }
+
+        private static DatabaseProvider GetDatabaseProvider(IConfiguration configuration)
+        {
+            var configuredProvider = configuration["DatabaseProvider"];
+            if (Enum.TryParse<DatabaseProvider>(configuredProvider, ignoreCase: true, out var provider))
+            {
+                return provider;
+            }
+
+            var connectionString = configuration.GetConnectionString("ChirpDBConnection");
+            if (!string.IsNullOrWhiteSpace(connectionString) &&
+                connectionString.Contains("Host=", StringComparison.OrdinalIgnoreCase))
+            {
+                return DatabaseProvider.PostgreSql;
+            }
+
+            return DatabaseProvider.Sqlite;
+        }
+
+        private enum DatabaseProvider
+        {
+            Sqlite,
+            PostgreSql
         }
     }
 }

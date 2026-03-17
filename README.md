@@ -20,13 +20,23 @@ dotnet user-secrets set "Authentication:GitHub:ClientSecret" "bcae20e854008588fd
 dotnet user-secrets set "Authentication:GitHub:ClientId" "Ov23li7jj1fMsnWTWXzO"
 ```
 
-### Step 5: Build and run the application
-Nagivate to the Chirp.Web project directory and start the application by running:
+### Step 5: Choose a database provider
+Development defaults to SQLite through `src/Chirp.Web/appsettings.Development.json`.
+
+Production and Docker are configured for PostgreSQL through `src/Chirp.Web/appsettings.json` and `src/Chirp.Web/appsettings.Production.json`.
+
+If you want to run PostgreSQL locally, start a database first:
+```
+docker run --name chirp-postgres -e POSTGRES_DB=chirp -e POSTGRES_USER=chirp -e POSTGRES_PASSWORD=chirp -p 5432:5432 -d postgres:16
+```
+
+### Step 6: Build and run the application
+Navigate to the `src/Chirp.Web` project directory and start the application by running:
 ```
 dotnet run
 ```
 
-### Step 6: Access the application
+### Step 7: Access the application
 Once the application has started successfully, the console will display a localhost URL. Open this URL in a web browser to access the Chirp! application.
 
 ### Running Test Suite locally

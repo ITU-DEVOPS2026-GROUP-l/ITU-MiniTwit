@@ -23,6 +23,9 @@ Vagrant.configure("2") do |config|
 
     server.vm.provision "shell", inline: 'echo "export DOCKER_USERNAME=' + "'" + ENV["DOCKER_USERNAME"] + "'" + '" >> ~/.bash_profile'
     server.vm.provision "shell", inline: 'echo "export DOCKER_PASSWORD=' + "'" + ENV["DOCKER_PASSWORD"] + "'" + '" >> ~/.bash_profile'
+    server.vm.provision "shell", inline: 'echo "export DATABASE_PROVIDER=PostgreSql" >> ~/.bash_profile'
+    server.vm.provision "shell", inline: 'echo "export ASPNETCORE_ENVIRONMENT=Production" >> ~/.bash_profile'
+    server.vm.provision "shell", inline: 'echo "export CHIRP_DB_CONNECTION=' + "'" + ENV["CHIRP_DB_CONNECTION"] + "'" + '" >> ~/.bash_profile'
 
     server.vm.provision "shell", inline: <<-SHELL
 
@@ -59,7 +62,7 @@ Vagrant.configure("2") do |config|
 
     echo -e "\nVagrant setup done ..."
     echo -e "minitwit will later be accessible at http://$(hostname -I | awk '{print $1}'):5000"
-    echo -e "The mysql database needs a minute to initialize, if the landing page shows an error stack-trace ..."
+    echo -e "Make sure CHIRP_DB_CONNECTION points at the managed PostgreSQL instance before running deploy.sh"
     SHELL
   end
 end

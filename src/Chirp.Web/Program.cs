@@ -47,7 +47,8 @@ public partial class Program
         {
             Args = args ?? Array.Empty<string>(),
             ContentRootPath = contentRoot ?? Directory.GetCurrentDirectory(),
-            ApplicationName = typeof(Program).Assembly.GetName().Name
+            ApplicationName = typeof(Program).Assembly.GetName().Name,
+            EnvironmentName = environmentName
         });
         
         builder.Services
@@ -68,11 +69,6 @@ public partial class Program
             builder.Configuration["ConnectionStrings:ChirpDBConnection"] = connectionStringOverride;
         }
 
-        if (!string.IsNullOrWhiteSpace(environmentName))
-        {
-            builder.Environment.EnvironmentName = environmentName;
-        }
-
         builder.Services.AddRazorPages(options =>
         {
         });
@@ -85,13 +81,29 @@ public partial class Program
 
         builder.Logging.AddFilter("Microsoft.EntityFrameworkCore", LogLevel.None);
         
-        //Ensures sqlite database connectionstring and directory available in docker.
-        EnsureSqliteDirectory(builder);
+        var connectionString = builder.Configuration.GetConnectionString("ChirpDBConnection")
+            ?? throw new InvalidOperationException("Connection string 'ChirpDBConnection' is not configured.");
+        var databaseProvider = GetDatabaseProvider(builder.Configuration);
+
+        if (databaseProvider == DatabaseProvider.Sqlite)
+        {
+            EnsureSqliteDirectory(builder, connectionString);
+        }
 
         builder.Services.AddDbContext<ChirpDBContext>(options =>
         {
-            options.UseSqlite(builder.Configuration.GetConnectionString("ChirpDBConnection"))
-                   .EnableSensitiveDataLogging(false);
+            switch (databaseProvider)
+            {
+                case DatabaseProvider.PostgreSql:
+                    options.UseNpgsql(connectionString);
+                    break;
+                case DatabaseProvider.Sqlite:
+                default:
+                    options.UseSqlite(connectionString);
+                    break;
+            }
+
+            options.EnableSensitiveDataLogging(false);
         });
 
         builder.Services.AddDefaultIdentity<Author>(
@@ -126,7 +138,14 @@ public partial class Program
         {
             var ctx = scope.ServiceProvider.GetRequiredService<ChirpDBContext>();
 
-            ctx.Database.Migrate();
+            if (databaseProvider == DatabaseProvider.PostgreSql)
+            {
+                ctx.Database.EnsureCreated();
+            }
+            else
+            {
+                ctx.Database.Migrate();
+            }
         }
 
         if (!app.Environment.IsDevelopment())
@@ -170,14 +189,8 @@ public partial class Program
     }
     
     //Creates a directory for the SQLite database on containers such as docker.
-    private static void EnsureSqliteDirectory(WebApplicationBuilder builder)
+    private static void EnsureSqliteDirectory(WebApplicationBuilder builder, string connectionString)
     {
-        var connectionString = builder.Configuration.GetConnectionString("ChirpDBConnection");
-        if (string.IsNullOrWhiteSpace(connectionString))
-        {
-            return;
-        }
-
         var sqliteBuilder = new SqliteConnectionStringBuilder(connectionString);
         if (string.IsNullOrWhiteSpace(sqliteBuilder.DataSource))
         {
@@ -192,5 +205,29 @@ public partial class Program
         {
             Directory.CreateDirectory(directory);
         }
+    }
+
+    private static DatabaseProvider GetDatabaseProvider(IConfiguration configuration)
+    {
+        var configuredProvider = configuration["DatabaseProvider"];
+        if (Enum.TryParse<DatabaseProvider>(configuredProvider, ignoreCase: true, out var provider))
+        {
+            return provider;
+        }
+
+        var connectionString = configuration.GetConnectionString("ChirpDBConnection");
+        if (!string.IsNullOrWhiteSpace(connectionString) &&
+            connectionString.Contains("Host=", StringComparison.OrdinalIgnoreCase))
+        {
+            return DatabaseProvider.PostgreSql;
+        }
+
+        return DatabaseProvider.Sqlite;
+    }
+
+    private enum DatabaseProvider
+    {
+        Sqlite,
+        PostgreSql
     }
 }
