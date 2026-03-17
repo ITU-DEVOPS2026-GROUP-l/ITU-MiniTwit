@@ -166,6 +166,13 @@ public partial class Program
             var start = DateTime.UtcNow;
             await next();
             var duration = DateTime.UtcNow - start;
+            
+            //Skip fuckass metrics... OR other requests if needed
+            if (context.Request.Path.StartsWithSegments("/metrics"))
+            {
+                return;
+            }
+            
             var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
             logger.LogInformation(
                 "REQUEST {Method} {Path} {StatusCode} {Duration}ms from {IP}",
