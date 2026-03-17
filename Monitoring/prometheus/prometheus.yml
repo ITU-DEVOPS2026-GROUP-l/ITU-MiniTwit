@@ -27,4 +27,3 @@ scrape_configs:
       - targets: ['161.35.211.34:5000']
         labels: 
           group: 'production'
-          
