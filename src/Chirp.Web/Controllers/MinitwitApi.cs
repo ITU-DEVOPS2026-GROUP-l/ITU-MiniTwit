@@ -22,17 +22,18 @@ using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.Net;
 using System.Text;
+using Prometheus;
 
 namespace Chirp.Web.Controllers
-{
+{ 
     /// <summary>
     /// 
     /// </summary>
     [ApiController]
     [Authorize(AuthenticationSchemes = "BasicAuthentication", Policy = "ApiPolicy")]
     public class MinitwitApiController : ControllerBase
-    {
-
+    { 
+        
         private const string ExpectedCaller = "simulator";
         private const string ExpectedCallerPassword = "super_safe!";
         private const int DefaultPageSize = 100;
@@ -349,6 +350,15 @@ namespace Chirp.Web.Controllers
             return StatusCode(204);
         }
 
+        /*
+        [HttpGet]
+        [Route("/metrics")]
+        public virtual IActionResult GetMetrics()
+        {
+            return Response();
+        }
+        */
+        
         /// <summary>
         /// 
         /// </summary>
