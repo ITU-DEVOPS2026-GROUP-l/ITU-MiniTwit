@@ -154,6 +154,14 @@ public partial class Program
         app.UseAuthentication();
         app.UseAuthorization();
         app.UseSession();
+        app.UseHttpLogging();
+        
+        builder.Services.AddHttpLogging(logging =>
+        {
+            logging.LoggingFields = Microsoft.AspNetCore.HttpLogging.HttpLoggingFields.All;
+            logging.RequestBodyLogLimit = 4096;
+            logging.ResponseBodyLogLimit = 4096;
+        });
         
         app.UseHttpMetrics(options =>
         {
