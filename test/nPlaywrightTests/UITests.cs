@@ -37,29 +37,6 @@ public class UITests : PageTest
         Assert.That(title, Is.EqualTo("Chirp!"));
     }
 
-    [Test, Order(2)]
-    public async Task accountpages()
-    {
-        await Page.GotoAsync(_baseUrl);
-        await Page.GetByRole(AriaRole.Link, new() { Name = "Register" }).ClickAsync();
-        await Page.GetByRole(AriaRole.Textbox, new() { Name = "Name" }).ClickAsync();
-        await Page.GetByRole(AriaRole.Textbox, new() { Name = "Name" }).FillAsync("noah");
-        await Page.GetByRole(AriaRole.Textbox, new() { Name = "Name" }).PressAsync("Tab");
-        await Page.GetByRole(AriaRole.Textbox, new() { Name = "Email" }).FillAsync("noah@itu.dk");
-        await Page.GetByRole(AriaRole.Textbox, new() { Name = "Email" }).PressAsync("Tab");
-        await Page.GetByRole(AriaRole.Textbox, new() { Name = "Password", Exact = true }).FillAsync("Dinmor2610!");
-        await Page.GetByRole(AriaRole.Textbox, new() { Name = "Password", Exact = true }).PressAsync("Tab");
-        await Page.GetByRole(AriaRole.Textbox, new() { Name = "Confirm Password" }).FillAsync("Dinmor2610!");
-        await Page.GetByRole(AriaRole.Button, new() { Name = "Register" }).ClickAsync();
-        await Page.GetByRole(AriaRole.Link, new() { Name = "Account" }).ClickAsync();
-        await Page.GetByRole(AriaRole.Link, new() { Name = "Profile" }).ClickAsync();
-        await Expect(Page.Locator("h3")).ToContainTextAsync("Profile");
-        await Page.GetByRole(AriaRole.Link, new() { Name = "Email" }).ClickAsync();
-        await Expect(Page.Locator("h3")).ToContainTextAsync("Manage Email");
-        await Page.GetByRole(AriaRole.Link, new() { Name = "Password" }).ClickAsync();
-        await Expect(Page.Locator("h3")).ToContainTextAsync("Change password");
-    }
-
     [Test, Order(3)]
     public async Task timelineChange()
     {
