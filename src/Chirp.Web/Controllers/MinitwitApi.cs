@@ -213,12 +213,6 @@ namespace Chirp.Web.Controllers
             }
 
             var author = _authorService.FindAuthorByUsername(username);
-            if (author == null)
-            {
-                forceRegister(username, latest);
-
-                author = _authorService.FindAuthorByUsername(username);
-
                 if(author == null)
                 {
                     return BadRequest(new ErrorResponse
@@ -227,7 +221,7 @@ namespace Chirp.Web.Controllers
                         Status = 400
                     });
                 }
-            }
+            
 
             var hasFollow = !string.IsNullOrWhiteSpace(payload?.Follow);
             var hasUnfollow = !string.IsNullOrWhiteSpace(payload?.Unfollow);
@@ -245,12 +239,6 @@ namespace Chirp.Web.Controllers
             if (hasFollow)
             {
                 var followee = _authorService.FindAuthorByUsername(payload?.Follow);
-                if (followee == null)
-                {
-                    forceRegister(payload.Follow, latest);
-
-                    followee = _authorService.FindAuthorByUsername(username);
-
                     if(followee == null)
                     {
                         return BadRequest(new ErrorResponse
@@ -260,7 +248,6 @@ namespace Chirp.Web.Controllers
                         });
                     }
 
-                }
                 _authorService.FollowAuthor(author.Id, followee.Id);
                 return NoContent();
             }
@@ -269,12 +256,6 @@ namespace Chirp.Web.Controllers
             if (hasUnfollow)
             {
                 var followee = _authorService.FindAuthorByUsername(payload?.Unfollow);
-                if (followee == null)
-                {
-                    forceRegister(payload.Unfollow, latest);
-
-                    followee = _authorService.FindAuthorByUsername(username);
-
                     if (followee == null)
                     {
                         return BadRequest(new ErrorResponse
@@ -286,7 +267,7 @@ namespace Chirp.Web.Controllers
                     {
                         return NoContent();
                     }
-                }
+                
 
                 _authorService.UnfollowAuthor(author.Id, followee.Id);
                 return NoContent();
@@ -320,13 +301,6 @@ namespace Chirp.Web.Controllers
             }
 
             var author = _authorService.FindAuthorByUsername(username);
-
-            if (author == null)
-            {
-                forceRegister(username, latest);
-
-                author = _authorService.FindAuthorByUsername(username);
-
                 if(author == null)
                 {
                     return BadRequest(new ErrorResponse
@@ -335,7 +309,7 @@ namespace Chirp.Web.Controllers
                         Status = 400
                     });
                 }
-            }
+            
 
             if (payload == null)
             {
@@ -451,19 +425,6 @@ namespace Chirp.Web.Controllers
             }
 
             return NoContent();
-        }
-
-        private void forceRegister(string username, int? latest)
-        {
-            RegisterRequest regReq = new RegisterRequest
-            {
-                Username = username,
-                Pwd = "dummyPwd",
-                Email = username + "@itu.dk"
-            };
-
-            PostRegister(regReq, latest);
-
         }
 
         private static Message MapCheepToMessage(CheepDTO cheep)
