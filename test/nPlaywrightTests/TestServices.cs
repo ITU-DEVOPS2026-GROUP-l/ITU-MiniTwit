@@ -35,6 +35,7 @@ namespace nPlaywrightTests
                 new[] { "--urls", "http://127.0.0.1:0" },
                 environmentName: Environments.Development,
                 disableExternalAuth: true,
+                connectionStringOverride: connectionString,
                 contentRoot: contentRoot);
             await _app.StartAsync();
 
@@ -64,6 +65,7 @@ namespace nPlaywrightTests
 
             var philip = await EnsureUserAsync(userManager, "phqu@itu.dk", "philip", "Dinmor123!");
             var official = await EnsureUserAsync(userManager, "official@chirp.test", "OfficialChutney", "Chirp123!");
+            await EnsureUserAsync(userManager, "noah@itu.dk", "noah", "Dinmor2610!");
 
             if (official != null)
             {
