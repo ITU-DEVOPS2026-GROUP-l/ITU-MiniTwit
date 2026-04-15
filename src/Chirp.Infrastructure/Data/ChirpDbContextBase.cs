@@ -53,13 +53,13 @@ namespace Chirp.Core.Data
 
             modelBuilder.Entity<UserFollow>()
                 .HasOne(uf => uf.Follower)
-                .WithMany()
+                .WithMany(a => a.Following)
                 .HasForeignKey(uf => uf.FollowerId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<UserFollow>()
                 .HasOne(uf => uf.Followee)
-                .WithMany()
+                .WithMany(a => a.Followers)
                 .HasForeignKey(uf => uf.FolloweeId)
                 .OnDelete(DeleteBehavior.Cascade);
         }

@@ -13,6 +13,8 @@ namespace Chirp.Core.Models
         [PersonalData] public string ProfilePicPath { get; set; } = "/images/default_profile_pic.png";
         
         public List<Cheep> Cheeps { get; set; } = new();
+        public List<UserFollow> Following { get; set; } = new();
+        public List<UserFollow> Followers { get; set; } = new();
 
         public int karma { get; set; } = 0;
     }
