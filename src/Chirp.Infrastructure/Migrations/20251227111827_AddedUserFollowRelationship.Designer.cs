@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Chirp.Infrastructure.Migrations
 {
-    [DbContext(typeof(ChirpDBContext))]
+    [DbContext(typeof(SqliteSeedChirpDbContext))]
     [Migration("20251227111827_AddedUserFollowRelationship")]
     partial class AddedUserFollowRelationship
     {

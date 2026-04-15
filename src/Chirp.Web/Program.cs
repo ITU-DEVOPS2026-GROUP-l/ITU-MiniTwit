@@ -3,6 +3,7 @@ using System.IO;
 using Chirp.Core.Data;
 using Chirp.Core.Models;
 using Chirp.Core.Repositories;
+using Chirp.Infrastructure.Data;
 using Chirp.Razor.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Chirp.Application.Services.Implementation;
@@ -11,6 +12,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.Data.Sqlite;
+using Npgsql;
 using Prometheus;
 
 // -----------------------------------------------------------------------------
@@ -39,7 +41,7 @@ public partial class Program
         string[]? args = null,
         bool disableHttpsRedirection = false,
         bool disableExternalAuth = true, //Disables Github authentication
-        string? connectionStringOverride = null,
+        string? primaryConnectionStringOverride = null,
         string? environmentName = null,
         string? contentRoot = null)
     {
@@ -47,7 +49,8 @@ public partial class Program
         {
             Args = args ?? Array.Empty<string>(),
             ContentRootPath = contentRoot ?? Directory.GetCurrentDirectory(),
-            ApplicationName = typeof(Program).Assembly.GetName().Name
+            ApplicationName = typeof(Program).Assembly.GetName().Name,
+            EnvironmentName = environmentName
         });
         
         builder.Services
@@ -63,14 +66,9 @@ public partial class Program
             builder.Configuration.SetBasePath(contentRoot);
         }
 
-        if (!string.IsNullOrWhiteSpace(connectionStringOverride))
+        if (!string.IsNullOrWhiteSpace(primaryConnectionStringOverride))
         {
-            builder.Configuration["ConnectionStrings:ChirpDBConnection"] = connectionStringOverride;
-        }
-
-        if (!string.IsNullOrWhiteSpace(environmentName))
-        {
-            builder.Environment.EnvironmentName = environmentName;
+            builder.Configuration["ConnectionStrings:ChirpPrimaryConnection"] = primaryConnectionStringOverride;
         }
 
         builder.Services.AddRazorPages(options =>
@@ -85,14 +83,18 @@ public partial class Program
 
         builder.Logging.AddFilter("Microsoft.EntityFrameworkCore", LogLevel.None);
         
-        //Ensures sqlite database connectionstring and directory available in docker.
-        EnsureSqliteDirectory(builder);
+        builder.Configuration["ConnectionStrings:LegacySqliteConnection"] =
+            ResolveSqliteConnectionString(builder, "LegacySqliteConnection");
+        EnsureSqliteDirectory(builder, "LegacySqliteConnection");
 
-        builder.Services.AddDbContext<ChirpDBContext>(options =>
+        RegisterPrimaryDatabase(builder);
+
+        builder.Services.AddDbContext<SqliteSeedChirpDbContext>(options =>
         {
-            options.UseSqlite(builder.Configuration.GetConnectionString("ChirpDBConnection"))
-                   .EnableSensitiveDataLogging(false);
+            options.UseSqlite(builder.Configuration.GetConnectionString("LegacySqliteConnection"))
+                .EnableSensitiveDataLogging(false);
         });
+        builder.Services.AddScoped<Seeding>();
 
         builder.Services.AddDefaultIdentity<Author>(
             options =>
@@ -126,7 +128,15 @@ public partial class Program
         {
             var ctx = scope.ServiceProvider.GetRequiredService<ChirpDBContext>();
 
-            ctx.Database.Migrate();
+            if (ctx.Database.IsNpgsql())
+            {
+                var seeding = scope.ServiceProvider.GetRequiredService<Seeding>();
+                seeding.EnsureMigratedAndSeededAsync().GetAwaiter().GetResult();
+            }
+            else
+            {
+                ctx.Database.EnsureCreated();
+            }
         }
 
         if (!app.Environment.IsDevelopment())
@@ -169,10 +179,121 @@ public partial class Program
         return app;
     }
     
-    //Creates a directory for the SQLite database on containers such as docker.
-    private static void EnsureSqliteDirectory(WebApplicationBuilder builder)
+    private static void RegisterPrimaryDatabase(WebApplicationBuilder builder)
     {
-        var connectionString = builder.Configuration.GetConnectionString("ChirpDBConnection");
+        var primaryDatabase = ResolvePrimaryDatabase(builder);
+
+        builder.Services.AddDbContext<ChirpDBContext>(options =>
+        {
+            if (primaryDatabase.Provider == DatabaseProvider.Sqlite)
+            {
+                options.UseSqlite(primaryDatabase.ConnectionString);
+            }
+            else
+            {
+                options.UseNpgsql(primaryDatabase.ConnectionString, npgsql =>
+                    npgsql.MigrationsAssembly("Chirp.Infrastructure"));
+            }
+
+            options.EnableSensitiveDataLogging(false);
+        });
+    }
+
+    private static PrimaryDatabaseSelection ResolvePrimaryDatabase(WebApplicationBuilder builder)
+    {
+        var sqliteConnectionString = builder.Configuration.GetConnectionString("LegacySqliteConnection");
+        if (string.IsNullOrWhiteSpace(sqliteConnectionString))
+        {
+            throw new InvalidOperationException("ConnectionStrings:LegacySqliteConnection is not configured.");
+        }
+
+        var configuredPrimaryConnectionString = builder.Configuration.GetConnectionString("ChirpPrimaryConnection");
+        if (!string.IsNullOrWhiteSpace(configuredPrimaryConnectionString) &&
+            LooksLikeSqliteConnection(configuredPrimaryConnectionString))
+        {
+            builder.Configuration["ConnectionStrings:ChirpPrimaryConnection"] =
+                ResolveSqliteConnectionString(builder, "ChirpPrimaryConnection");
+            EnsureSqliteDirectory(builder, "ChirpPrimaryConnection");
+
+            return new PrimaryDatabaseSelection(
+                DatabaseProvider.Sqlite,
+                builder.Configuration.GetConnectionString("ChirpPrimaryConnection")!);
+        }
+
+        if (!TryResolvePostgresConnectionString(builder, out var postgresConnectionString))
+        {
+            return new PrimaryDatabaseSelection(DatabaseProvider.Sqlite, sqliteConnectionString);
+        }
+
+        if (CanConnectToPostgres(postgresConnectionString))
+        {
+            builder.Configuration["ConnectionStrings:ChirpPrimaryConnection"] = postgresConnectionString;
+            return new PrimaryDatabaseSelection(DatabaseProvider.Postgres, postgresConnectionString);
+        }
+
+        return new PrimaryDatabaseSelection(DatabaseProvider.Sqlite, sqliteConnectionString);
+    }
+
+    private static bool LooksLikeSqliteConnection(string connectionString)
+    {
+        return connectionString.Contains("Data Source=", StringComparison.OrdinalIgnoreCase) ||
+               connectionString.Contains("Filename=", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string ResolveSqliteConnectionString(WebApplicationBuilder builder, string connectionStringName)
+    {
+        var connectionString = builder.Configuration.GetConnectionString(connectionStringName);
+        if (string.IsNullOrWhiteSpace(connectionString) || !LooksLikeSqliteConnection(connectionString))
+        {
+            return connectionString ?? string.Empty;
+        }
+
+        var sqliteBuilder = new SqliteConnectionStringBuilder(connectionString);
+        if (string.IsNullOrWhiteSpace(sqliteBuilder.DataSource) ||
+            sqliteBuilder.DataSource == ":memory:" ||
+            Path.IsPathRooted(sqliteBuilder.DataSource))
+        {
+            return connectionString;
+        }
+
+        sqliteBuilder.DataSource = Path.GetFullPath(
+            Path.Combine(builder.Environment.ContentRootPath, sqliteBuilder.DataSource));
+
+        return sqliteBuilder.ToString();
+    }
+
+    private static bool TryResolvePostgresConnectionString(WebApplicationBuilder builder, out string connectionString)
+    {
+        connectionString = builder.Environment.IsProduction()
+            ? Environment.GetEnvironmentVariable("CHIRP_DB_CONNECTION") ?? string.Empty
+            : builder.Configuration.GetConnectionString("ChirpPrimaryConnection") ?? string.Empty;
+
+        if (string.IsNullOrWhiteSpace(connectionString) || LooksLikeSqliteConnection(connectionString))
+        {
+            connectionString = string.Empty;
+            return false;
+        }
+
+        return true;
+    }
+
+    private static bool CanConnectToPostgres(string connectionString)
+    {
+        try
+        {
+            using var connection = new NpgsqlConnection(connectionString);
+            connection.Open();
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static void EnsureSqliteDirectory(WebApplicationBuilder builder, string connectionStringName)
+    {
+        var connectionString = builder.Configuration.GetConnectionString(connectionStringName);
         if (string.IsNullOrWhiteSpace(connectionString))
         {
             return;
@@ -193,4 +314,12 @@ public partial class Program
             Directory.CreateDirectory(directory);
         }
     }
+
+    private enum DatabaseProvider
+    {
+        Sqlite,
+        Postgres
+    }
+
+    private sealed record PrimaryDatabaseSelection(DatabaseProvider Provider, string ConnectionString);
 }

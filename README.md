@@ -45,3 +45,6 @@ Then when you use
 dotnet test
 ```
 The playwright tests will also run.
+
+## PsotGre Docker for development:
+Run docker compose -f docker-compose.postgres.yml up -d

@@ -10,6 +10,8 @@ services:
     container_name: minitwit
     ports:
       - "5000:5000"
+    environment:
+      CHIRP_DB_CONNECTION: ${CHIRP_DB_CONNECTION}
   
   prometheus:
     build:

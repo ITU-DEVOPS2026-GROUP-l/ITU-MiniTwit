@@ -1,0 +1,21 @@
+services:
+  chirp-postgres:
+    image: postgres:16
+    container_name: chirp-postgres-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: chirp_dev
+      POSTGRES_USER: chirp_dev_user
+      POSTGRES_PASSWORD: chirp_dev_password
+    ports:
+      - "5433:5432"
+    volumes:
+      - chirp-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chirp_dev_user -d chirp_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  chirp-postgres-data:
