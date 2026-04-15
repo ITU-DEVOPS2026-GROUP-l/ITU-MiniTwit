@@ -7,16 +7,19 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Reflection.Metadata;
 using System.Security.Claims;
 using System.Linq;
+using Microsoft.Extensions.Logging;
 
 namespace Chirp.Application.Services.Implementation
 {
     public class AuthorService : IAuthorService
     {
         private readonly IAuthorRepository _repo;
+        private readonly ILogger<AuthorService> _logger;
 
-        public AuthorService(IAuthorRepository repo)
+        public AuthorService(IAuthorRepository repo,  ILogger<AuthorService> logger)
         {
             _repo = repo;
+            _logger = logger;
         }
 
         public AuthorDTO? FindAuthorByUsername(string username)
@@ -152,6 +155,7 @@ namespace Chirp.Application.Services.Implementation
                 return;
             }
 
+            _logger.LogInformation("NEW_FOLLOW follower={Follower} target={Target}", follower.Name, followee.Name);
             _repo.FollowAuthor(follower, followee);
         }
 

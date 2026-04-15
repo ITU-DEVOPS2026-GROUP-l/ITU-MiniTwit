@@ -671,7 +671,7 @@
               }
             ]
           },
-          "unit": "decmbytes"
+          "unit": "decbytes"
         },
         "overrides": []
       },

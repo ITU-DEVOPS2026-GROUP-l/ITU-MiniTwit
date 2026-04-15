@@ -1,5 +1,3 @@
-version: '3.3'
-
 networks:
   main:
 
@@ -12,7 +10,9 @@ services:
       - "5000:5000"
     environment:
       CHIRP_DB_CONNECTION: ${CHIRP_DB_CONNECTION}
-  
+    networks:
+      - main
+
   prometheus:
     build:
       dockerfile: ./Dockerfile
@@ -23,6 +23,37 @@ services:
       - "--config.file=/etc/prometheus/prometheus.yml"
     ports:
       - "9090:9090"
+    networks:
+      - main
+    depends_on:
+      - minitwit
+  
+  loki:
+    image: grafana/loki:3.6.7
+    container_name: loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - ../Monitoring/loki/loki-config.yml:/etc/loki/local-config.yaml
+      - loki-data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - main
+    restart: unless-stopped
+    
+  promtail:
+    image: grafana/promtail:3.6.0
+    container_name: promtail
+    volumes:
+      - ../Monitoring/promtail/promtail-config.yml:/etc/promtail/config.yml
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - main
+    depends_on:
+      - loki
+    restart: unless-stopped
   
   grafana:
     build:
@@ -35,6 +66,12 @@ services:
     volumes: 
       - grafana-storage:/var/lib/grafana
       - ../Monitoring/grafana/provisioning:/etc/grafana/provisioning
+    networks:
+      - main
+    depends_on:
+      -  prometheus
+      -  loki
 
 volumes:
   grafana-storage:
+  loki-data:

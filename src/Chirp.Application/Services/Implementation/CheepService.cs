@@ -2,6 +2,7 @@ using Chirp.Application.DTO;
 using Chirp.Application.Services.Interface;
 using Chirp.Core.Models;
 using Chirp.Core.Repositories;
+using Microsoft.Extensions.Logging;
 
 namespace Chirp.Application.Services.Implementation
 {
@@ -10,10 +11,12 @@ namespace Chirp.Application.Services.Implementation
         private const int PageSize = 32;
 
         private readonly ICheepRepository _cheepRepository;
+        private readonly ILogger<CheepService> _logger;
 
-        public CheepService(ICheepRepository cheepRepository)
+        public CheepService(ICheepRepository cheepRepository, ILogger<CheepService> logger)
         {
             _cheepRepository = cheepRepository;
+            _logger = logger;
         }
 
         /// <summary>
@@ -60,6 +63,7 @@ namespace Chirp.Application.Services.Implementation
         /// <param name="authorId">The unique identifier of the author creating the cheep. Cannot be null or empty.</param>
         public void AddCheep(string text, string authorId)
         {
+            _logger.LogInformation("NEW_POST user={AuthorId} length={Length}", authorId, text.Length);
             _cheepRepository.AddCheep(text, authorId);
         }
 
