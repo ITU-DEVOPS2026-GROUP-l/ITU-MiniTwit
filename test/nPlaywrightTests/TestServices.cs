@@ -33,9 +33,9 @@ namespace nPlaywrightTests
 
             _app = global::Program.BuildWebApplication(
                 new[] { "--urls", "http://127.0.0.1:0" },
+                primaryConnectionStringOverride: connectionString,
                 environmentName: Environments.Development,
                 disableExternalAuth: true,
-                connectionStringOverride: connectionString,
                 contentRoot: contentRoot);
             await _app.StartAsync();
 

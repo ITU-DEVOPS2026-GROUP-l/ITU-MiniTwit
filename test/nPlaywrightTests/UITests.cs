@@ -43,13 +43,13 @@ public class UITests : PageTest
         await Page.GotoAsync(_baseUrl);
         await Page.GetByRole(AriaRole.Link, new() { Name = "Login" }).ClickAsync();
         await Page.GetByRole(AriaRole.Textbox, new() { Name = "Email" }).ClickAsync();
-        await Page.GetByRole(AriaRole.Textbox, new() { Name = "Email" }).FillAsync("noah@itu.dk");
+        await Page.GetByRole(AriaRole.Textbox, new() { Name = "Email" }).FillAsync("phqu@itu.dk");
         await Page.GetByRole(AriaRole.Textbox, new() { Name = "Email" }).PressAsync("Tab");
-        await Page.GetByRole(AriaRole.Textbox, new() { Name = "Password" }).FillAsync("Dinmor2610!");
+        await Page.GetByRole(AriaRole.Textbox, new() { Name = "Password" }).FillAsync("Dinmor123!");
         await Page.GetByRole(AriaRole.Button, new() { Name = "Log in" }).ClickAsync();
         await Expect(Page.Locator("h2")).ToContainTextAsync("Public Timeline");
         await Page.GetByRole(AriaRole.Link, new() { Name = "my timeline" }).ClickAsync();
-        await Expect(Page.Locator("h2")).ToContainTextAsync("noah's Timeline");
+        await Expect(Page.Locator("h2")).ToContainTextAsync("philip's Timeline");
     }
 
     [OneTimeTearDown]
