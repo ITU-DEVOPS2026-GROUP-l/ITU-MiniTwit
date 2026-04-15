@@ -36,7 +36,6 @@ namespace nPlaywrightTests
                 primaryConnectionStringOverride: connectionString,
                 environmentName: Environments.Development,
                 disableExternalAuth: true,
-                connectionStringOverride: connectionString,
                 contentRoot: contentRoot);
             await _app.StartAsync();
 
