@@ -279,16 +279,42 @@ namespace Chirp.Infrastructure.Data
 
         private async Task ResetIdentitySequencesAsync(CancellationToken cancellationToken)
         {
-            await ResetSequenceAsync("Cheeps", "CheepId", cancellationToken);
-            await ResetSequenceAsync("AspNetRoleClaims", "Id", cancellationToken);
-            await ResetSequenceAsync("AspNetUserClaims", "Id", cancellationToken);
+            await ResetSequenceAsync(SequenceTarget.CheepsCheepId, cancellationToken);
+            await ResetSequenceAsync(SequenceTarget.AspNetRoleClaimsId, cancellationToken);
+            await ResetSequenceAsync(SequenceTarget.AspNetUserClaimsId, cancellationToken);
         }
 
-        private async Task ResetSequenceAsync(string tableName, string columnName, CancellationToken cancellationToken)
+        private async Task ResetSequenceAsync(SequenceTarget sequenceTarget, CancellationToken cancellationToken)
         {
-            var sql =
-                $"SELECT setval(pg_get_serial_sequence('\"{tableName}\"', '{columnName}'), " +
-                $"COALESCE(MAX(\"{columnName}\"), 1), MAX(\"{columnName}\") IS NOT NULL) FROM \"{tableName}\";";
+            var sql = sequenceTarget switch
+            {
+                SequenceTarget.CheepsCheepId =>
+                    """
+                    SELECT setval(
+                        pg_get_serial_sequence('"Cheeps"', 'CheepId'),
+                        COALESCE(MAX("CheepId"), 1),
+                        MAX("CheepId") IS NOT NULL)
+                    FROM "Cheeps";
+                    """,
+                SequenceTarget.AspNetRoleClaimsId =>
+                    """
+                    SELECT setval(
+                        pg_get_serial_sequence('"AspNetRoleClaims"', 'Id'),
+                        COALESCE(MAX("Id"), 1),
+                        MAX("Id") IS NOT NULL)
+                    FROM "AspNetRoleClaims";
+                    """,
+                SequenceTarget.AspNetUserClaimsId =>
+                    """
+                    SELECT setval(
+                        pg_get_serial_sequence('"AspNetUserClaims"', 'Id'),
+                        COALESCE(MAX("Id"), 1),
+                        MAX("Id") IS NOT NULL)
+                    FROM "AspNetUserClaims";
+                    """,
+                _ => throw new ArgumentOutOfRangeException(nameof(sequenceTarget), sequenceTarget, "Unknown sequence target.")
+            };
+
             await _targetContext.Database.ExecuteSqlRawAsync(sql, cancellationToken);
         }
 
@@ -426,6 +452,13 @@ namespace Chirp.Infrastructure.Data
             int Cheeps,
             int Follows,
             int Likes);
+
+        private enum SequenceTarget
+        {
+            CheepsCheepId,
+            AspNetRoleClaimsId,
+            AspNetUserClaimsId
+        }
 
         private sealed record TargetTableState(
             bool Authors,
