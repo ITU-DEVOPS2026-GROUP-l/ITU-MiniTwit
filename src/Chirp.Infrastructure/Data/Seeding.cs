@@ -315,7 +315,27 @@ namespace Chirp.Infrastructure.Data
                 _ => throw new ArgumentOutOfRangeException(nameof(sequenceTarget), sequenceTarget, "Unknown sequence target.")
             };
 
-            await _targetContext.Database.ExecuteSqlRawAsync(sql, cancellationToken);
+            var connection = _targetContext.Database.GetDbConnection();
+            var shouldCloseConnection = connection.State != System.Data.ConnectionState.Open;
+
+            if (shouldCloseConnection)
+            {
+                await connection.OpenAsync(cancellationToken);
+            }
+
+            try
+            {
+                await using var command = connection.CreateCommand();
+                command.CommandText = sql;
+                await command.ExecuteNonQueryAsync(cancellationToken);
+            }
+            finally
+            {
+                if (shouldCloseConnection)
+                {
+                    await connection.CloseAsync();
+                }
+            }
         }
 
         private static Author CloneAuthor(Author source)
