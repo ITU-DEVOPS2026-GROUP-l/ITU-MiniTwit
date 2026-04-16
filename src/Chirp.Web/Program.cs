@@ -87,7 +87,7 @@ public partial class Program
             ResolveSqliteConnectionString(builder, "LegacySqliteConnection");
         EnsureSqliteDirectory(builder, "LegacySqliteConnection");
 
-        RegisterPrimaryDatabase(builder);
+        var primaryDatabase = RegisterPrimaryDatabase(builder);
 
         builder.Services.AddDbContext<SqliteSeedChirpDbContext>(options =>
         {
@@ -131,6 +131,11 @@ public partial class Program
 
         
         var app = builder.Build();
+
+        app.Logger.LogInformation(
+            "Primary database provider selected: {Provider}. Reason: {Reason}",
+            primaryDatabase.Provider,
+            primaryDatabase.Reason);
 
         using (var scope = app.Services.CreateScope())
         {
@@ -212,7 +217,7 @@ public partial class Program
         return app;
     }
     
-    private static void RegisterPrimaryDatabase(WebApplicationBuilder builder)
+    private static PrimaryDatabaseSelection RegisterPrimaryDatabase(WebApplicationBuilder builder)
     {
         var primaryDatabase = ResolvePrimaryDatabase(builder);
 
@@ -230,6 +235,8 @@ public partial class Program
 
             options.EnableSensitiveDataLogging(false);
         });
+
+        return primaryDatabase;
     }
 
     private static PrimaryDatabaseSelection ResolvePrimaryDatabase(WebApplicationBuilder builder)
@@ -250,21 +257,31 @@ public partial class Program
 
             return new PrimaryDatabaseSelection(
                 DatabaseProvider.Sqlite,
-                builder.Configuration.GetConnectionString("ChirpPrimaryConnection")!);
+                builder.Configuration.GetConnectionString("ChirpPrimaryConnection")!,
+                "Configured primary connection string is SQLite.");
         }
 
         if (!TryResolvePostgresConnectionString(builder, out var postgresConnectionString))
         {
-            return new PrimaryDatabaseSelection(DatabaseProvider.Sqlite, sqliteConnectionString);
+            return new PrimaryDatabaseSelection(
+                DatabaseProvider.Sqlite,
+                sqliteConnectionString,
+                "No PostgreSQL connection string was configured; using legacy SQLite.");
         }
 
         if (CanConnectToPostgres(postgresConnectionString))
         {
             builder.Configuration["ConnectionStrings:ChirpPrimaryConnection"] = postgresConnectionString;
-            return new PrimaryDatabaseSelection(DatabaseProvider.Postgres, postgresConnectionString);
+            return new PrimaryDatabaseSelection(
+                DatabaseProvider.Postgres,
+                postgresConnectionString,
+                "Successfully connected to PostgreSQL during startup.");
         }
 
-        return new PrimaryDatabaseSelection(DatabaseProvider.Sqlite, sqliteConnectionString);
+        return new PrimaryDatabaseSelection(
+            DatabaseProvider.Sqlite,
+            sqliteConnectionString,
+            "PostgreSQL connection string was present, but the startup connectivity check failed; using legacy SQLite.");
     }
 
     private static bool LooksLikeSqliteConnection(string connectionString)
@@ -354,5 +371,8 @@ public partial class Program
         Postgres
     }
 
-    private sealed record PrimaryDatabaseSelection(DatabaseProvider Provider, string ConnectionString);
+    private sealed record PrimaryDatabaseSelection(
+        DatabaseProvider Provider,
+        string ConnectionString,
+        string Reason);
 }
