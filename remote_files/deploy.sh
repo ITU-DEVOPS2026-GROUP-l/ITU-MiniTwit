@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-set -euo pipefail
-
 source ~/.bash_profile
+
+set -euo pipefail
 
 : "${DOCKER_USERNAME:?DOCKER_USERNAME is not set in ~/.bash_profile}"
 : "${DOCKER_PASSWORD:?DOCKER_PASSWORD is not set in ~/.bash_profile}"
