@@ -1,7 +1,15 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
 source ~/.bash_profile
+
+: "${DOCKER_USERNAME:?DOCKER_USERNAME is not set in ~/.bash_profile}"
+: "${DOCKER_PASSWORD:?DOCKER_PASSWORD is not set in ~/.bash_profile}"
+: "${CHIRP_DB_CONNECTION:?CHIRP_DB_CONNECTION is not set in ~/.bash_profile}"
 
 cd /minitwit
 
+echo "${DOCKER_PASSWORD}" | docker login --username "${DOCKER_USERNAME}" --password-stdin
 docker compose -f docker-compose.yml pull
 docker compose -f docker-compose.yml up -d
 

@@ -72,22 +72,23 @@ jobs:
           echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
-      
+
+      - name: Sync deployment files to server
+        run: |
+          ssh -i ~/.ssh/id_rsa "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" "mkdir -p /minitwit /minitwit/Monitoring"
+
+          rsync -az \
+            -e "ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa" \
+            ./remote_files/docker-compose.yml \
+            ./remote_files/deploy.sh \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/minitwit/
+
+          rsync -az --delete \
+            -e "ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa" \
+            ./Monitoring/ \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/minitwit/Monitoring/
+
       - name: Run deploy script on server
         run: |
           ssh -i ~/.ssh/id_rsa "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
           "bash /minitwit/deploy.sh"
-              
-      - name: Sync files to droplet
-        run: |
-          rsync -az --delete \
-            --exclude '.git' \
-            --exclude 'bin' \
-            --exclude 'obj' \
-            --exclude 'data' \
-            -e "ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa" \
-            ./ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/itu-minitwit/
-          
-        env:
-          SSH_USER: ${{ secrets.SSH_USER }}
-          SSH_HOST: ${{ secrets.SSH_HOST }}
