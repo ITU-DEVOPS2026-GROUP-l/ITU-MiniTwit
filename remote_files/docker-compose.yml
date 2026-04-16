@@ -9,6 +9,8 @@ services:
       - "5000:5000"
     environment:
       CHIRP_DB_CONNECTION: ${CHIRP_DB_CONNECTION}
+    volumes:
+      - /root/chirp.db:/app/data/chirp.db:ro
     networks:
       - main
 
