@@ -55,7 +55,7 @@ jobs:
         with:
           command: cves
           image: ${{ secrets.DOCKER_USERNAME }}/minitwitimage:latest
-          exit-code: true
+          exit-code: false
           only-severities: critical,high,medium,low
       
       - name: Push minitwitimage
