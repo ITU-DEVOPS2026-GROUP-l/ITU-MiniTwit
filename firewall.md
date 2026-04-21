@@ -27,7 +27,7 @@ Port   | Action | Description
 9090   | Allow  | Prometheus
 
 ## Setup commands used
-´´´
+```
 sudo ufw default deny incoming
 sudo ufw default allow outgoing
 sudo ufw limit ssh
@@ -38,7 +38,8 @@ sudo ufw allow 5000
 sudo ufw allow 3000
 sudo ufw allow 9090
 sudo ufw enable
-´´´
+```
+
 ## Notes
 - SSH is rate-limited
 - IPv6 rules are automatically applied alongside IPv4
