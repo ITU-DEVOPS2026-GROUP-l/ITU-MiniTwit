@@ -18,6 +18,10 @@ services:
     image: ${DOCKER_USERNAME}/minitwitimage:${IMAGE_TAG}
     deploy:
       replicas: 2
+    update_config:
+      parallelism: 1
+      delay: 10s
+      order: start-first
     environment:
       CHIRP_DB_CONNECTION: ${CHIRP_DB_CONNECTION}
     volumes:
