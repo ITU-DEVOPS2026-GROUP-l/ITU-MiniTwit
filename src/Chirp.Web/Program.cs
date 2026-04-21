@@ -1,19 +1,20 @@
-using System;
-using System.IO;
+using Chirp.Application.Services.Implementation;
+using Chirp.Application.Services.Interface;
 using Chirp.Core.Data;
 using Chirp.Core.Models;
 using Chirp.Core.Repositories;
 using Chirp.Infrastructure.Data;
 using Chirp.Razor.Repositories;
-using Microsoft.EntityFrameworkCore;
-using Chirp.Application.Services.Implementation;
-using Chirp.Application.Services.Interface;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using Prometheus;
+using System;
+using System.IO;
 
 // -----------------------------------------------------------------------------
 // Application configuration entry point for the Chirp web app.
@@ -154,9 +155,32 @@ public partial class Program
 
         if (!app.Environment.IsDevelopment())
         {
-            app.UseExceptionHandler("/Error");
+            app.UseExceptionHandler(errorApp =>
+            {
+                errorApp.Run(async context =>
+                {
+                    var exceptionFeature = context.Features.Get<IExceptionHandlerPathFeature>();
+                    var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+
+                    logger.LogError(
+                        exceptionFeature?.Error,
+                        "Unhandled exception for {Method} {OriginalPath}",
+                        context.Request.Method,
+                        exceptionFeature?.Path ?? context.Request.Path.Value);
+
+                    context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                    context.Response.ContentType = "application/json";
+
+                    await context.Response.WriteAsJsonAsync(new
+                    {
+                        error = "An unexpected error occurred."
+                    });
+                });
+            });
             app.UseHsts();
         }
+
+
 
         if (!disableHttpsRedirection && !app.Environment.IsProduction())
         {
