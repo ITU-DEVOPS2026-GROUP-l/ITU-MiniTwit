@@ -3,7 +3,7 @@ networks:
 
 services:
   minitwit:
-    image: ${DOCKER_USERNAME}/minitwitimage:latest
+    image: ${DOCKER_USERNAME}/minitwitimage:${IMAGE_TAG}
     container_name: minitwit
     ports:
       - "5000:5000"

@@ -1,14 +1,12 @@
----
 name: Continuous Deployment
 
 on:
   push:
-    # Run workflow every time something is pushed to the main branch
     branches:
       - main
       - master
-  # allow manual triggers for now too
-  workflow_dispatch:  
+  workflow_dispatch:
+
 permissions:
   contents: read
   packages: write
@@ -19,15 +17,19 @@ permissions:
 # DOCKER_PASSWORD
 # SSH_USER
 # SSH_KEY
-# SSH_HOST
+# SSH_HOST //unused now
+# SSH_HOST_BACKUP
+# SSH_HOST_PRIMARY
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ github.sha }}
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -38,15 +40,15 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      #Image 1: Itu-minitwit
       - name: Build and push minitwitimage
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
-          push: false
-          load: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/minitwitimage:latest
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/minitwitimage:${{ github.sha }}
+            ${{ secrets.DOCKER_USERNAME }}/minitwitimage:latest
           cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/minitwitimage:webbuildcache
           cache-to: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/minitwitimage:webbuildcache,mode=max
 
@@ -54,53 +56,47 @@ jobs:
         uses: docker/scout-action@v1
         with:
           command: cves
-          image: ${{ secrets.DOCKER_USERNAME }}/minitwitimage:latest
-          exit-code: false
+          image: ${{ secrets.DOCKER_USERNAME }}/minitwitimage:${{ github.sha }}
+          exit-code: true
           only-severities: critical,high,medium,low
-      
-      - name: Push minitwitimage
-        run: docker push ${{ secrets.DOCKER_USERNAME }}/minitwitimage:latest
 
-      - name: Configure SSH
-        run: |
-          mkdir -p ~/.ssh/
-          echo "$SSH_KEY" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-        env:
-          SSH_KEY: ${{ secrets.SSH_KEY }}
-
-  Deploy:
+  deploy:
     runs-on: ubuntu-latest
     needs: build
-    
+    strategy:
+      fail-fast: false
+      matrix:
+        host:
+          - ${{ secrets.SSH_HOST_PRIMARY }}
+          - ${{ secrets.SSH_HOST_BACKUP }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-                
-      # Configure the ~./bash_profile and deploy.sh file on the Vagrantfile
+
       - name: Configure SSH
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
+          ssh-keyscan -H "${{ matrix.host }}" >> ~/.ssh/known_hosts
 
       - name: Sync deployment files to server
         run: |
-          ssh -i ~/.ssh/id_rsa "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" "mkdir -p /minitwit /minitwit/Monitoring"
+          ssh -i ~/.ssh/id_rsa "${{ secrets.SSH_USER }}@${{ matrix.host }}" "mkdir -p /minitwit /minitwit/Monitoring"
 
           rsync -az \
             -e "ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa" \
             ./remote_files/docker-compose.yml \
             ./remote_files/deploy.sh \
-            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/minitwit/
+            "${{ secrets.SSH_USER }}@${{ matrix.host }}:/minitwit/"
 
           rsync -az --delete \
             -e "ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa" \
             ./Monitoring/ \
-            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/minitwit/Monitoring/
+            "${{ secrets.SSH_USER }}@${{ matrix.host }}:/minitwit/Monitoring/"
 
       - name: Run deploy script on server
         run: |
-          ssh -i ~/.ssh/id_rsa "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
-          "bash /minitwit/deploy.sh"
+          ssh -i ~/.ssh/id_rsa "${{ secrets.SSH_USER }}@${{ matrix.host }}" \
+          "export IMAGE_TAG=${{ needs.build.outputs.image_tag }} && bash /minitwit/deploy.sh"
