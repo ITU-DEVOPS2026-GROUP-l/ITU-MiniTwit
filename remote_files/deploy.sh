@@ -16,7 +16,7 @@ fi
 export IMAGE_TAG
 
 docker compose pull
-docker compose up -d --remove-orphans
+docker compose up -d --remove-orphans --scale minitwit=2
 
 sudo ufw allow 22
 sudo ufw allow 3000
