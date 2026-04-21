@@ -27,22 +27,18 @@ jobs:
 
       - name: Restore Playwright tests
         run: dotnet restore test/nPlaywrightTests/nPlaywrightTests.csproj
-
-      - name: Install Security Code Scan
-        run: dotnet tool install --global security-scan
         
-      - name: Run Security Code Scan
-        run: |
-          export PATH="$PATH:$HOME/.dotnet/tools"
-          which security-scan || echo "security-scan not found in PATH"
-          security-scan ./Chirp.sln --export=scsr.sarif || echo "security-scan failed with code $?"
-          ls -la || echo "no sarif produced"
+      - name: Run Semgrep SAST
+        uses: semgrep/semgrep-action@v1
+        with: 
+          config: p/csharp
+          generateSarif: true
           
       - name: Upload SARIF to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
-          sarif_file: scsr.sarif
+          sarif_file: semgrep.sarif
 
       - name: Build
         run: dotnet build --configuration Debug --no-restore
