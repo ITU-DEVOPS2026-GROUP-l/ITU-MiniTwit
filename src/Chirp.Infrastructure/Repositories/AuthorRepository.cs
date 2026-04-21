@@ -122,7 +122,7 @@ namespace Chirp.Razor.Repositories
             {
                 FollowerId = Follower.Id,
                 FolloweeId = Followee.Id,
-                TimeStamp = DateTime.UtcNow
+                TimeStamp = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified)
             });
 
             _context.SaveChanges();
