@@ -104,7 +104,7 @@ namespace Chirp.Razor.Repositories
             {
                 AuthorId = authorId,
                 Text = text,
-                TimeStamp = DateTime.Now
+                TimeStamp = DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Unspecified)
             };
 
             _context.Cheeps.Add(cheep);
