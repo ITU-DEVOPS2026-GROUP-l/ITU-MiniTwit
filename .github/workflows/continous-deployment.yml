@@ -44,10 +44,22 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
-          push: true
+          push: false
+          load: true
           tags: ${{ secrets.DOCKER_USERNAME }}/minitwitimage:latest
           cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/minitwitimage:webbuildcache
           cache-to: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/minitwitimage:webbuildcache,mode=max
+
+      - name: Docker scout
+        uses: docker/scout-action@v1
+        with:
+          command: cves
+          image: ${{ secrets.DOCKER_USERNAME }}/minitwitimage:latest
+          exit-code: false
+          only-severities: critical,high,medium,low
+      
+      - name: Push minitwitimage
+        run: docker push ${{ secrets.DOCKER_USERNAME }}/minitwitimage:latest
 
       - name: Configure SSH
         run: |

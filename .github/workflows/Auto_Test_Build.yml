@@ -7,6 +7,10 @@ on:
     branches: [ "main" ]
   workflow_dispatch:
 
+permissions: 
+  contents: read
+  security-events: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -23,6 +27,17 @@ jobs:
 
       - name: Restore Playwright tests
         run: dotnet restore test/nPlaywrightTests/nPlaywrightTests.csproj
+        
+      - name: Run Semgrep SAST
+        run: |
+          pip install semgrep
+          semgrep --config p/csharp --sarif --output=semgrep.sarif . || true
+          
+      - name: Upload SARIF to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        with:
+          sarif_file: semgrep.sarif
 
       - name: Build
         run: dotnet build --configuration Debug --no-restore
