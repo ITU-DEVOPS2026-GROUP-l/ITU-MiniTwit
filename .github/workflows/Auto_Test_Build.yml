@@ -28,8 +28,18 @@ jobs:
         run: dotnet tool install --global security-scan
         
       - name: Run Security Code Scan
-        run: security-scan ./Chirp.sln --export=scsr.sarif
-        
+        run: |
+          security-scan ./Chirp.sln --export=scsr.sarif
+          echo "Exit code: $?"
+          ls -la *.sarif || echo "No sarif files found"
+          
+      - name: Debug - list files
+        if: always()
+        run: |
+          pwd
+          ls -la
+          find . -name "*.sarif" 2>/dev/null || echo "No sarif files anywhere"
+          
       - name: Upload SARIF to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
         if: always()
