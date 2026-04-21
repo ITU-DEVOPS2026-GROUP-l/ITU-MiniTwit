@@ -3,9 +3,9 @@
 ## Overview
 Both of our servers are protected with UFW on Ubuntu
 
-##Servers 
+## Servers 
 
-### minitwit-ci-server (161.35.211.34)
+### Main Server: minitwit-ci-server (161.35.211.34)
 
 Port   | Action | Description
 -------|--------|-------------
@@ -26,3 +26,20 @@ Port   | Action | Description
 3000   | Allow  | Grafana
 9090   | Allow  | Prometheus
 
+## Setup commands used
+´´´
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
+sudo ufw limit ssh
+sudo ufw allow http
+sudo ufw allow https
+sudo ufw allow 'Nginx Full'
+sudo ufw allow 5000
+sudo ufw allow 3000
+sudo ufw allow 9090
+sudo ufw enable
+´´´
+## Notes
+- SSH is rate-limited
+- IPv6 rules are automatically applied alongside IPv4
+- Logging is enabled on both servers
