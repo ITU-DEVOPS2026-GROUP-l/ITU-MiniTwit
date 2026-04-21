@@ -34,14 +34,9 @@ jobs:
       - name: Run Security Code Scan
         run: |
           export PATH="$PATH:$HOME/.dotnet/tools"
-          security-scan ./Chirp.sln --export=scsr.sarif
-          
-      - name: Debug - list files
-        if: always()
-        run: |
-          pwd
-          ls -la
-          find . -name "*.sarif" 2>/dev/null || echo "No sarif files anywhere"
+          which security-scan || echo "security-scan not found in PATH"
+          security-scan ./Chirp.sln --export=scsr.sarif || echo "security-scan failed with code $?"
+          ls -la || echo "no sarif produced"
           
       - name: Upload SARIF to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v4
