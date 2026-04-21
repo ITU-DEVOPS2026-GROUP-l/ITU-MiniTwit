@@ -16,6 +16,8 @@ services:
 
   minitwit:
     image: ${DOCKER_USERNAME}/minitwitimage:${IMAGE_TAG}
+    deploy:
+      replicas: 2
     environment:
       CHIRP_DB_CONNECTION: ${CHIRP_DB_CONNECTION}
     volumes:
