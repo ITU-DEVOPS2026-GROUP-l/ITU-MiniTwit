@@ -28,7 +28,7 @@ jobs:
         run: dotnet tool install --global security-scan
         
       - name: Run Security Code Scan
-        run: security-scan ./Chirp.sln --export=scsr.sarif || true
+        run: security-scan ./Chirp.sln --export=scsr.sarif
         
       - name: Upload SARIF to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
