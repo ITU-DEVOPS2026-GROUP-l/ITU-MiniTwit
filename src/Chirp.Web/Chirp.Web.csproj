@@ -5,7 +5,6 @@
 	  <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>5632450c-4f48-42aa-b1ed-915a0d2b7fef</UserSecretsId>
-	  <PreserveCompilationContext>true</PreserveCompilationContext>
   </PropertyGroup>
 
   <ItemGroup>
@@ -27,11 +26,6 @@
 	<PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.5" />
 	<PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="8.0.5" />
 	<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.5" />
-	<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.5">
-	  <PrivateAssets>all</PrivateAssets>
-	  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-	</PackageReference>
-	<PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="8.0.0" />
 	<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
 	<PackageReference Include="prometheus-net.AspNetCore" Version="8.2.1" />
 	<PackageReference Include="Swashbuckle.AspNetCore.Annotations" Version="10.1.3" />
