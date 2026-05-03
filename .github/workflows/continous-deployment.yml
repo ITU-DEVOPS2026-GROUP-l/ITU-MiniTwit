@@ -66,9 +66,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        host:
-          - ${{ secrets.SSH_HOST_PRIMARY }}
-          - ${{ secrets.SSH_HOST_BACKUP }}
+        host_secret:
+          - SSH_HOST_PRIMARY
+          - SSH_HOST_BACKUP
 
     steps:
       - name: Checkout
@@ -79,24 +79,24 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H "${{ matrix.host }}" >> ~/.ssh/known_hosts
+          ssh-keyscan -H "${{ secrets[matrix.host_secret] }}" >> ~/.ssh/known_hosts
 
       - name: Sync deployment files to server
         run: |
-          ssh -i ~/.ssh/id_rsa "${{ secrets.SSH_USER }}@${{ matrix.host }}" "mkdir -p /minitwit /minitwit/Monitoring"
+          ssh -i ~/.ssh/id_rsa "${{ secrets.SSH_USER }}@${{ secrets[matrix.host_secret] }}" "mkdir -p /minitwit /minitwit/Monitoring"
 
           rsync -az \
             -e "ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa" \
             ./remote_files/docker-compose.yml \
             ./remote_files/deploy.sh \
-            "${{ secrets.SSH_USER }}@${{ matrix.host }}:/minitwit/"
+            "${{ secrets.SSH_USER }}@${{ secrets[matrix.host_secret] }}:/minitwit/"
 
           rsync -az --delete \
             -e "ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa" \
             ./Monitoring/ \
-            "${{ secrets.SSH_USER }}@${{ matrix.host }}:/minitwit/Monitoring/"
+            "${{ secrets.SSH_USER }}@${{ secrets[matrix.host_secret] }}:/minitwit/Monitoring/"
 
       - name: Run deploy script on server
         run: |
-          ssh -i ~/.ssh/id_rsa "${{ secrets.SSH_USER }}@${{ matrix.host }}" \
+          ssh -i ~/.ssh/id_rsa "${{ secrets.SSH_USER }}@${{ secrets[matrix.host_secret] }}" \
           "export IMAGE_TAG=${{ needs.build.outputs.image_tag }} && bash /minitwit/deploy.sh"
