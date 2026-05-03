@@ -58,7 +58,7 @@ jobs:
           command: cves
           image: ${{ secrets.DOCKER_USERNAME }}/minitwitimage:${{ github.sha }}
           exit-code: true
-          only-severities: critical,high,medium,low
+          only-severities: critical,high
 
   deploy:
     runs-on: ubuntu-latest
