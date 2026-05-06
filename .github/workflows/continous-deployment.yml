@@ -89,6 +89,7 @@ jobs:
             -e "ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa" \
             ./remote_files/docker-compose.yml \
             ./remote_files/deploy.sh \
+            ./remote_files/nginx.conf \
             "${{ secrets.SSH_USER }}@${{ secrets[matrix.host_secret] }}:/minitwit/"
 
           rsync -az --delete \

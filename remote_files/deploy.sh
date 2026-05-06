@@ -19,6 +19,8 @@ docker compose pull
 docker compose up -d --remove-orphans --scale minitwit=2
 
 sudo ufw allow 22
+sudo ufw allow 5000
 sudo ufw allow 3000
 sudo ufw allow 9090
+sudo ufw allow 'Nginx Full'
 sudo ufw enable
