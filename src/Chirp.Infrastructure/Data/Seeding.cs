@@ -41,10 +41,10 @@ namespace Chirp.Infrastructure.Data
                 sqlitePath ?? "unresolved");
 
             var tableState = await GetTargetTableStateAsync(cancellationToken);
-            if (tableState.IsFullySeeded)
+            if (tableState.ContainsApplicationData)
             {
                 _logger.LogInformation(
-                    "Skipping SQLite-to-PostgreSQL seed import because target database is already seeded. Authors: {Authors}, Cheeps: {Cheeps}, Follows: {Follows}, Likes: {Likes}, Roles: {Roles}, RoleClaims: {RoleClaims}, UserClaims: {UserClaims}, UserLogins: {UserLogins}, UserRoles: {UserRoles}, UserTokens: {UserTokens}",
+                    "Skipping SQLite-to-PostgreSQL seed import because target database already contains application data. Authors: {Authors}, Cheeps: {Cheeps}, Follows: {Follows}, Likes: {Likes}, Roles: {Roles}, RoleClaims: {RoleClaims}, UserClaims: {UserClaims}, UserLogins: {UserLogins}, UserRoles: {UserRoles}, UserTokens: {UserTokens}",
                     tableState.Authors,
                     tableState.Cheeps,
                     tableState.Follows,
@@ -492,17 +492,11 @@ namespace Chirp.Infrastructure.Data
             bool UserRoles,
             bool UserTokens)
         {
-            public bool IsFullySeeded =>
-                Authors &&
-                Cheeps &&
-                Follows &&
-                Likes &&
-                Roles &&
-                RoleClaims &&
-                UserClaims &&
-                UserLogins &&
-                UserRoles &&
-                UserTokens;
+            public bool ContainsApplicationData =>
+                Authors ||
+                Cheeps ||
+                Follows ||
+                Likes;
         }
     }
 }

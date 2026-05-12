@@ -8,7 +8,7 @@ namespace Chirp.Core.Models
     {
         [PersonalData] public string Name { get; set; } = null!;
 
-        [PersonalData] public DateTime CreationDate { get; set; } = DateTime.Now;
+        [PersonalData] public DateTime CreationDate { get; set; } = DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Unspecified);
 
         [PersonalData] public string ProfilePicPath { get; set; } = "/images/default_profile_pic.png";
         

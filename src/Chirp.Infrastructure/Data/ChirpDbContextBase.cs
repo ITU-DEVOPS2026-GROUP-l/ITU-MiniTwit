@@ -1,11 +1,17 @@
 using Chirp.Core.Models;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Chirp.Core.Data
 {
     public abstract class ChirpDbContextBase : IdentityDbContext<Author>
     {
+        private static readonly ValueConverter<DateTime, DateTime> TimestampWithoutTimeZoneConverter =
+            new(
+                value => DateTime.SpecifyKind(value, DateTimeKind.Unspecified),
+                value => DateTime.SpecifyKind(value, DateTimeKind.Unspecified));
+
         public DbSet<Cheep> Cheeps { get; set; } = null!;
         public DbSet<Author> Authors { get; set; } = null!;
         public DbSet<UserFollow> UserFollows { get; set; } = null!;
@@ -22,14 +28,17 @@ namespace Chirp.Core.Data
 
             modelBuilder.Entity<Author>()
                 .Property(a => a.CreationDate)
+                .HasConversion(TimestampWithoutTimeZoneConverter)
                 .HasColumnType("timestamp without time zone");
 
             modelBuilder.Entity<Cheep>()
                 .Property(c => c.TimeStamp)
+                .HasConversion(TimestampWithoutTimeZoneConverter)
                 .HasColumnType("timestamp without time zone");
 
             modelBuilder.Entity<UserFollow>()
                 .Property(uf => uf.TimeStamp)
+                .HasConversion(TimestampWithoutTimeZoneConverter)
                 .HasColumnType("timestamp without time zone");
 
             modelBuilder.Entity<UserFollow>()

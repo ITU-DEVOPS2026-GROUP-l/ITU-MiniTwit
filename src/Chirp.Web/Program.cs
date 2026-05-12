@@ -90,9 +90,15 @@ public partial class Program
 
         var primaryDatabase = RegisterPrimaryDatabase(builder);
 
+        var legacySqliteConnectionString = builder.Configuration.GetConnectionString("LegacySqliteConnection");
+        if (primaryDatabase.Provider == DatabaseProvider.Postgres)
+        {
+            legacySqliteConnectionString = ResolveReadOnlySqliteConnectionString(legacySqliteConnectionString);
+        }
+
         builder.Services.AddDbContext<SqliteSeedChirpDbContext>(options =>
         {
-            options.UseSqlite(builder.Configuration.GetConnectionString("LegacySqliteConnection"))
+            options.UseSqlite(legacySqliteConnectionString)
                 .EnableSensitiveDataLogging(false);
         });
         builder.Services.AddScoped<Seeding>();
@@ -333,6 +339,24 @@ public partial class Program
         sqliteBuilder.DataSource = Path.GetFullPath(
             Path.Combine(builder.Environment.ContentRootPath, sqliteBuilder.DataSource));
 
+        return sqliteBuilder.ToString();
+    }
+
+    private static string? ResolveReadOnlySqliteConnectionString(string? connectionString)
+    {
+        if (string.IsNullOrWhiteSpace(connectionString) || !LooksLikeSqliteConnection(connectionString))
+        {
+            return connectionString;
+        }
+
+        var sqliteBuilder = new SqliteConnectionStringBuilder(connectionString);
+        if (string.IsNullOrWhiteSpace(sqliteBuilder.DataSource) ||
+            sqliteBuilder.DataSource == ":memory:")
+        {
+            return connectionString;
+        }
+
+        sqliteBuilder.Mode = SqliteOpenMode.ReadOnly;
         return sqliteBuilder.ToString();
     }
 
