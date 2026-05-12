@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -e
 source ~/.bash_profile
 
 cd /minitwit
@@ -8,17 +9,31 @@ if [ -z "$CHIRP_DB_CONNECTION" ]; then
   exit 1
 fi
 
-if [ -z "$IMAGE_TAG" ]; then
-  echo "IMAGE_TAG is not set. Aborting deployment."
+if [ -z "$DOCKER_USERNAME" ]; then
+  echo "DOCKER_USERNAME is not set. Aborting deployment."
   exit 1
 fi
 
-export IMAGE_TAG
+# Pull latest images
+docker compose pull minitwit-1 minitwit-2
 
-docker compose pull
+# Rolling update: restart one instance at a time so traffic keeps flowing
+echo "Updating minitwit-1..."
+docker compose up -d --no-deps minitwit-1
+sleep 15
+
+echo "Updating minitwit-2..."
+docker compose up -d --no-deps minitwit-2
+sleep 15
+
+# Bring up everything else (no-op if already running)
 docker compose up -d --remove-orphans
 
+# Firewall rules
 sudo ufw allow 22
 sudo ufw allow 3000
 sudo ufw allow 9090
-sudo ufw enable
+sudo ufw --force enable
+
+echo "Deploy complete."
+docker compose ps
