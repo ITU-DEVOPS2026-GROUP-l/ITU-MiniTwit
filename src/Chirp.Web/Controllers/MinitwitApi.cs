@@ -34,8 +34,6 @@ namespace Chirp.Web.Controllers
     public class MinitwitApiController : ControllerBase
     { 
         
-        private const string ExpectedCaller = "simulator";
-        private const string ExpectedCallerPassword = "super_safe!";
         private const int DefaultPageSize = 100;
         private readonly ICheepService _cheepService;
         private readonly IAuthorService _authorService;
