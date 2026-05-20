@@ -189,7 +189,6 @@ namespace Chirp.Web.Controllers
         /// <response code="403">Unauthorized - Must include correct Authorization header</response>
         /// <response code="404">User not found (no response body)</response>
         [HttpPost]
-        [ValidateAntiForgeryToken]
         [Route("/fllws/{username}")]
         [Consumes("application/json")]
         [ValidateModelState]
@@ -286,7 +285,6 @@ namespace Chirp.Web.Controllers
         /// <response code="204">No Content</response>
         /// <response code="403">Unauthorized - Must include correct Authorization header</response>
         [HttpPost]
-        [ValidateAntiForgeryToken]
         [Route("/msgs/{username}")]
         [Consumes("application/json")]
         [ValidateModelState]
@@ -342,7 +340,6 @@ namespace Chirp.Web.Controllers
         /// <response code="204">No Content</response>
         /// <response code="400">Bad Request | Possible reasons:  - missing username  - invalid email  - password missing  - username already taken</response>
         [HttpPost]
-        [ValidateAntiForgeryToken]
         [Route("/register")]
         [Consumes("application/json")]
         [ValidateModelState]
