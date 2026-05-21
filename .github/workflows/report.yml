@@ -1,0 +1,40 @@
+name: Build Report
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'report/**'
+  workflow_dispatch:
+
+jobs:
+  build-report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Pandoc and LaTeX
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pandoc texlive-latex-recommended texlive-fonts-recommended texlive-latex-extra
+
+      - name: Build report PDF
+        run: |
+          if ls report/*.md 1>/dev/null 2>&1; then
+            mkdir -p report/build
+            pandoc report/*.md \
+              --resource-path=report \
+              -o report/build/BSc_group_l.pdf
+            echo "report_built=true" >> "$GITHUB_ENV"
+          else
+            echo "No markdown files found in report/, skipping build"
+            echo "report_built=false" >> "$GITHUB_ENV"
+          fi
+
+      - name: Upload report artifact
+        if: env.report_built == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-pdf
+          path: report/build/BSc_group_l.pdf
