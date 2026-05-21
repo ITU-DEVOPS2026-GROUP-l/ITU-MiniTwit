@@ -42,6 +42,57 @@ The development PostgreSQL connection string is configured in `src/Chirp.Web/app
 
 SQLite uses `src/Chirp.Web/data/chirp.db` in development and `/app/data/chirp.db` in production-style containers.
 
+## Provisioning
+The production environment can be visited at: Minitwit.me
+
+Before running these commands, please set your environment variables as such:
+$env:DIGITAL_OCEAN_TOKEN="<insert-digital-ocean-api-key>"
+$env:DOCKER_USERNAME="officialchutney"
+$env:DOCKER_PASSWORD="<insert-dockerhub-password>"
+
+For provisioning of a DigitalOcean droplet we use Vagrant and have written a vagrant file. To make use of this run the following commands:
+
+``` powershell
+cd /ITU-MiniTwit/
+vagrant up minitwit-demo --provider=digital_ocean
+```
+If this process stalls use CTRL-C to interrupt the process and then run 
+```powershell
+vagrant provision minitwit-demo
+```
+When this process has run, connect to the droplet using
+```powershell
+vagrant ssh
+```
+
+When connected to the droplet, please run the following commands:
+```
+cd /minitwit
+sed -i 's/\r$//' deploy.sh docker-compose.yml nginx.conf
+chmod +x deploy.sh
+
+read -rsp "DB password: " DB_PASSWORD
+echo
+
+cat > .env <<EOF
+DOCKER_USERNAME=officialchutney
+IMAGE_TAG=latest
+CHIRP_DB_CONNECTION='<Insert DB connectionstring>'
+EOF
+
+chmod 600 .env
+
+docker compose pull nginx minitwit
+docker compose up -d --remove-orphans --scale minitwit=2 minitwit nginx
+```
+You will be asked for tha password for the database, which you will have to enter.
+
+For inspecting the status of the server run
+```powershell
+docker compose logs --tail=80 minitwit
+```
+
+Now the droplet should be running and available and you can inspect it via the link provided on the server, or DigitalOcean.
 ## Testing
 
 Run all tests:
