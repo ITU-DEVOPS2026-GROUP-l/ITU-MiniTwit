@@ -117,19 +117,19 @@ After the merge, the continuous deployment workflow builds the production Docker
 # Video Demonstrations
 
 ## Monitoring Dashboards in Action
-[Monitoring GIF](./report/images/Monitoring_Dashboards_in_action.gif)
+![Monitoring GIF](./report/images/Monitoring_Dashboards_in_action.gif)
 
 
 ## Logging Dashboards in Action
-[Logging GIF](./report/images/logging-in-action.gif)
+![Logging GIF](./report/images/logging-in-action.gif)
 
 ## IaC in Action
-[IaC GIF](./report/images/iac-in-action.gif)
+![IaC GIF](./report/images/iac-in-action.gif)
 
 
 ## CI/CD in Action
-[IaC GIF](./report/images/ci-cd-in-action-part1.gif)
-[IaC GIF](./report/images/ci-cd-in-action-part2.gif)
-[IaC GIF](./report/images/ci-cd-in-action-part3.gif)
-[IaC GIF](./report/images/ci-cd-in-action-part4.gif)
+![CICD ONE GIF](./report/images/ci-cd-in-action-part1.gif)
+![CICD TWO GIF](./report/images/ci-cd-in-action-part2.gif)
+![CICD THREE GIF](./report/images/ci-cd-in-action-part3.gif)
+![CICD FOUR GIF](./report/images/ci-cd-in-action-part4.gif)
 
