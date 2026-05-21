@@ -2,7 +2,30 @@
 
 # Table of Contents
 
-[TOC]
+- [Systems perspective](#systems-perspective)
+  - [Design](#design)
+  - [Architecture](#architecture)
+    - [User Access](#user-access)
+  - [Technologies](#technologies)
+    - [MiniTwit Application dependencies:](#minitwit-application-dependencies)
+    - [Application Server dependencies:](#application-server-dependencies)
+    - [CI/CD Dependencies:](#cicd-dependencies)
+  - [Current state of system](#current-state-of-system)
+- [Process perspective](#process-perspective)
+    - [CI/CD Pipeline](#cicd-pipeline)
+  - [Monitoring with Grafana](#monitoring-with-grafana)
+    - [Infrastructure and integration:](#infrastructure-and-integration)
+    - [Known issues:](#known-issues)
+  - [Logging with Loki](#logging-with-loki)
+    - [Loki architecture](#loki-architecture)
+    - [Logging value](#logging-value)
+- [Reflection Perspective](#reflection-perspective)
+  - [Evolution and refactoring](#evolution-and-refactoring)
+  - [ERROR handling](#error-handling)
+  - [WHAT DID WE DO DIFFERENTLY](#what-did-we-do-differently)
+    - [Database migration and SQLite backup](#database-migration-and-sqlite-backup)
+- [Use of Generative AI](#use-of-generative-ai)
+- [Report contributions](#report-contributions)
 
 # Systems perspective
 ## Design
@@ -11,7 +34,7 @@ Our Minitwit application initially started as the legacy Python 2 version which 
 Replacing the original Python2 (later Python3) MiniTwit application with the Chirp project allowed us to avoid future maintainability and dependency related issues, which is common with legacy systems. Furthermore building upon an already established architecture allowed us to focus more on DevOps related task such as deployment, infrastructure configuration and systems maintenance.
 
 ## Architecture
-![Architecture](./report/image/Architecture.png)
+![Architecture](./image/Architecture.png)
 *Figure 1: Onion Structure of the MiniTwit Application*
 
 The MiniTwit application is structured around the Onion Architecture as seen on figure 1. This approach ensures domain and application logic are kept separate from technical concerns such as the web framework, database access, authentication and API configuration. The 'Chirp.Web' part of the project is where the bulk of changes has been made for API controllers, middleware, and session based login.
@@ -21,7 +44,7 @@ The application uses EF Core together with ASP.NET Core Identity to handle datab
 MiniTwit API is kept separated from this flow and protected using basic Authentication configured as part of the middleware.
 
 
-![deployment](./report/image/deployment.png)
+![deployment](./image/deployment.png)
 *Figure 2: Deployment Diagram of entire Minitwit System.*
 
 Figure 2 shows the system architecture is relatively simple and distributed across three servers:
@@ -38,7 +61,7 @@ The primary and backup application servers are containerized using Docker Compos
 * Two MiniTwit application containers running the ASP.NET Core web app.
 
 ### User Access
-![Sequence](./report/image/Sequence.png)
+![Sequence](./image/Sequence.png)
 *Figure 3: Nginx distributing requests between two Docker containers using round robin and both querying PostgresSQL Database.*
 
 Figure 3 depicts how a User accesses the system through the Nginx reverse proxy. Nginx forwards incoming HTTP requests to the MiniTwit application containers through Docker’s internal network, and distributing traffic between the two replicas to reduce load on a single container and improve availability.
@@ -94,7 +117,7 @@ Overall, the system is considered stable. The following warnings, errors, and re
 
 The issues Codacy report are warnings concerning infrastructure and dependency management, such as Docker configurations and third party repositories using latest package versions instead of pinned versions. While these does not currently affect system stability, they could introduce security risks in the future if dependencies become compromised. These issues would therefore be prioritized in a long term development.
 
-![Grafana](./report/image/Grafana.png)
+![Grafana](./image/Grafana.png)
 *Figure 4: Grafana Dashboard*
 
 Figure 4 shows the Grafana dashboard, which indicates that the ASP.NET system is generally stable and performs well during normal operation. CPU utilization remains at an acceptable level of approximately 50%, and memory usage appears stable without signs of memory leaks or excessive garbage collection activity. Most requests are completed successfully with HTTP 200 responses, while server side errors remain limited.
@@ -106,13 +129,13 @@ The most significant instability occurred between the 8th and 11th of May. Durin
 These issues were presumably caused by a lack of resources on the servers, as they're running multiple containers with only 1GB of ram. We fixed this by adding a swapfile on the server, which is disk space Linux can use like emergency RAM when physical memory runs low. After this was implemented, the server became more responsive, and interactable.
 
 # Process perspective 
-![developmentProcessWorkflow](./report/image/developmentProcessWorkflow.png)
+![developmentProcessWorkflow](./image/developmentProcessWorkflow.png)
 *Figure 5: Flow diagram of process from idea to production*
 
 Figure 5 shows how an idea gets to production. When an idea is made, we decide whether it should be a feature. If yes, then we create a feature branch from main, develop the feature, ensure idiomatic code, and create tests. If all tests pass, a pull request is created, and our CI pipeline runs. If review is approved, and CI passes, it is pushed to main, the CD runs, and the feature is pushed to the production environment.
 
 ### CI/CD Pipeline
-![CICDMINITWIT](./report/image/CICDMINITWIT.png)
+![CICDMINITWIT](./image/CICDMINITWIT.png)
 *Figure 6: Flowdiagram of CI/CD*
 Figure 6 shows our flowdiagram of the CI/CD pipeline on a push to main. Do note that our CI pipeline also gets run on any pull request.
 
@@ -123,7 +146,7 @@ Our CD pipeline runs after the CI and only if CI passes before being merged in v
 Do note that if one step in the pipeline fails, none of the subsequent steps will run.
 
 ## Monitoring with Grafana
-![image](./report/image/GrafanaTwo.png)
+![image](./image/GrafanaTwo.png)
 *Figure 7: Grafana Dashboard*
 To monitor our system, we use Grafana, which is shown on Figure 7, integrated using prometheus as our "observer". Grafana serves as our systems health monitor, deployed via our dockerfile it provieds live insights into the systems overall health and performance metrics. Prometheus handles metrics collection and short time storage by scraping data from an endpoint exposed by our application at regular intervals.
 
