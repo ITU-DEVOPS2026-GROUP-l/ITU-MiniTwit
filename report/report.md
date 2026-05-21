@@ -26,6 +26,7 @@
     - [Database migration and SQLite backup](#database-migration-and-sqlite-backup)
 - [Use of Generative AI](#use-of-generative-ai)
 - [Report contributions](#report-contributions)
+- [Bibliography](#bibliography)
 
 # Systems perspective
 ## Design
@@ -77,32 +78,32 @@ Prometheus is responsible for collecting hardware and application metrics, inclu
 
 ## Technologies
 ### MiniTwit Application dependencies:
-* .NET SDK 8.0.102 targeting net8.0.
-* ASP.NET Core Razor Pages for the web UI and API.
-* ASP.NET Core Identity for users, login, registration, account management, and personal data handling.
-* Entity Framework Core 8 for persistence and migrations.
-* PostgreSQL/Npgsql for production style database support for PostgresSQL database servers.
-* xUnit for unit and integration tests.
-* NUnit and Playwright for browser UI/end-to-end tests.
-* SQLite for local/legacy fallback and test data.
+* .NET SDK 8.0.102 targeting net8.0. [[dotnet-sdk]](#dotnet-sdk)
+* ASP.NET Core Razor Pages for the web UI and API. [[aspnetcore]](#aspnet-core)
+* ASP.NET Core Identity for users, login, registration, account management, and personal data handling. [[aspnetcore]](#aspnet-core)
+* Entity Framework Core 8 for persistence and migrations. [[ef-core]](#entity-framework-core)
+* PostgreSQL/Npgsql for production style database support for PostgreSQL database servers. [[postgresql]](#postgresql) [[npgsql]](#npgsql)
+* xUnit for unit and integration tests. [[xunit]](#xunit)
+* NUnit and Playwright for browser UI/end-to-end tests. [[nunit]](#nunit) [[playwright-dotnet]](#playwright-dotnet)
+* SQLite for local/legacy fallback and test data. [[sqlite]](#sqlite)
 
 ### Application Server dependencies:
-* Docker for application packaging.
-* 8.0-jammy-chiseled hardened docker image.
-* Docker Compose for service orchestration.
-* Nginx as reverse proxy/load-balancing entry point.
-* Vagrant for provisioning the server.
-* DigitalOcean for hosting docker containers containing application, and monitoring.
-* DigitalOcean for hosting PostgreSQL server.
-* Prometheus for collection metrics from systems and applications. 
-* Promtail for collecting logs from Docker containers.
-* Loki for storing logs collected from promtail.
-* Grafana for querying Loki for logs and Prometheus for metrics, and displaying it on a Dashboard site.
+* Docker for application packaging. [[docker]](#docker)
+* 8.0-jammy-chiseled hardened Docker image. [[dotnet-docker]](#dotnet-docker)
+* Docker Compose for service orchestration. [[docker-compose]](#docker-compose)
+* Nginx as reverse proxy/load-balancing entry point. [[nginx]](#nginx)
+* Vagrant for provisioning the server. [[vagrant]](#vagrant)
+* DigitalOcean for hosting Docker containers containing application, and monitoring. [[digitalocean]](#digitalocean-doctl)
+* DigitalOcean for hosting PostgreSQL server. [[digitalocean]](#digitalocean-doctl)
+* Prometheus for collection metrics from systems and applications. [[prometheus]](#prometheus)
+* Promtail for collecting logs from Docker containers. [[loki]](#grafana-loki-and-promtail)
+* Loki for storing logs collected from Promtail. [[loki]](#grafana-loki-and-promtail)
+* Grafana for querying Loki for logs and Prometheus for metrics, and displaying it on a dashboard site. [[grafana]](#grafana)
 
 ### CI/CD Dependencies:
-* Github Actions for CI/CD.
-* Codacy for static analysis.
-* Security Scan 2019 for security analysis.
+* GitHub Actions for CI/CD. [[github-actions]](#github-actions-runner)
+* Codacy for static analysis. [[codacy]](#codacy-analysis-cli)
+* Security Code Scan 2019 for security analysis. [[security-code-scan]](#security-code-scan)
 
 ## Current state of system
 Overall, the system is considered stable. The following warnings, errors, and remaining issues are currently present:
@@ -234,3 +235,88 @@ However, the use of Generative AI also introduced challenges during the initial 
     * Reflection - Use of Generative AI
     * Reflection - Evolution and refactoring
     * Readme of Project & Creation of Videos
+
+# Bibliography
+<a id="dotnet-sdk"></a>
+## .NET SDK
+Microsoft. ".NET SDK." GitHub repository. Available at: https://github.com/dotnet/sdk
+
+<a id="aspnet-core"></a>
+## ASP.NET Core
+Microsoft. "ASP.NET Core." GitHub repository. Available at: https://github.com/dotnet/aspnetcore
+
+<a id="entity-framework-core"></a>
+## Entity Framework Core
+Microsoft. "Entity Framework Core." GitHub repository. Available at: https://github.com/dotnet/efcore
+
+<a id="postgresql"></a>
+## PostgreSQL
+PostgreSQL Global Development Group. "PostgreSQL." GitHub mirror of the official Git repository. Available at: https://github.com/postgres/postgres
+
+<a id="npgsql"></a>
+## Npgsql
+Npgsql. "Npgsql." GitHub repository. Available at: https://github.com/npgsql/npgsql
+
+<a id="xunit"></a>
+## xUnit
+xUnit.net. "xUnit.net." GitHub repository. Available at: https://github.com/xunit/xunit
+
+<a id="nunit"></a>
+## NUnit
+NUnit. "NUnit Framework." GitHub repository. Available at: https://github.com/nunit/nunit
+
+<a id="playwright-dotnet"></a>
+## Playwright .NET
+Microsoft. "Playwright for .NET." GitHub repository. Available at: https://github.com/microsoft/playwright-dotnet
+
+<a id="sqlite"></a>
+## SQLite
+SQLite. "SQLite." Official Git mirror of the SQLite source tree. Available at: https://github.com/sqlite/sqlite
+
+<a id="docker"></a>
+## Docker
+Docker. "Docker." GitHub repository for the open-source container engine. Available at: https://github.com/docker
+
+<a id="dotnet-docker"></a>
+## .NET Docker
+Microsoft. ".NET Docker images." GitHub repository. Available at: https://github.com/dotnet/dotnet-docker
+
+<a id="docker-compose"></a>
+## Docker Compose
+Docker. "Docker Compose." GitHub repository. Available at: https://github.com/docker/compose
+
+<a id="nginx"></a>
+## Nginx
+F5 NGINX. "NGINX Open Source." GitHub repository. Available at: https://github.com/nginx/nginx
+
+<a id="vagrant"></a>
+## Vagrant
+HashiCorp. "Vagrant." GitHub repository. Available at: https://github.com/hashicorp/vagrant
+
+<a id="digitalocean-doctl"></a>
+## DigitalOcean
+DigitalOcean. DigitalOcean.com. Available at: https://www.digitalocean.com
+
+<a id="prometheus"></a>
+## Prometheus
+Prometheus. "Prometheus." GitHub repository. Available at: https://github.com/prometheus/prometheus
+
+<a id="grafana-loki-and-promtail"></a>
+## Grafana Loki and Promtail
+Grafana Labs. "Loki." GitHub repository containing Loki and Promtail. Available at: https://github.com/grafana/loki
+
+<a id="grafana"></a>
+## Grafana
+Grafana Labs. "Grafana." GitHub repository. Available at: https://github.com/grafana/grafana
+
+<a id="github-actions-runner"></a>
+## GitHub Actions Runner
+GitHub. "GitHub Actions Runner." GitHub repository. Available at: https://github.com/actions/runner
+
+<a id="codacy-analysis-cli"></a>
+## Codacy Analysis
+Codacy. "Codacy Analysis." Codacy.com. Available at: https://www.codacy.com
+
+<a id="security-code-scan"></a>
+## Security Code Scan
+Security Code Scan. "Security Code Scan." GitHub repository. Available at: https://github.com/security-code-scan/security-code-scan
