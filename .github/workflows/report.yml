@@ -8,6 +8,9 @@ on:
       - 'report/**'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build-report:
     runs-on: ubuntu-latest
@@ -38,3 +41,12 @@ jobs:
         with:
           name: report-pdf
           path: report/build/BSc_group_l.pdf
+
+      - name: Commit report PDF
+        if: env.report_built == 'true'
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add report/build/BSc_group_l.pdf
+          git diff --cached --quiet || git commit -m "Build report PDF [skip ci]"
+          git push
