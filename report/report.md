@@ -62,7 +62,7 @@ The primary and backup application servers are containerized using Docker Compos
 * Two MiniTwit application containers running the ASP.NET Core web app.
 
 ### User Access
-![Sequence](./report/image/Sequence.png)
+![Sequence](./images/Sequence.png)
 *Figure 3: Nginx distributing requests between two Docker containers using round robin and both querying PostgreSQL Database.*
 
 Figure 3 depicts how a User accesses the system through the Nginx reverse proxy. Nginx forwards incoming HTTP requests to the MiniTwit application containers through Docker’s internal network, and distributing traffic between the two replicas to reduce load on a single container and improve availability.
@@ -136,7 +136,7 @@ These issues were presumably caused by a lack of resources on the servers, as th
 Figure 5 shows how an idea gets to production. When an idea is made, we decide whether it should be a feature. If yes, then we create a feature branch from main, develop the feature, ensure idiomatic code, and create tests. If all tests pass, a pull request is created, and our CI pipeline runs. If review is approved, and CI passes, it is pushed to main, the CD runs, and the feature is pushed to the production environment.
 
 ### CI/CD Pipeline
-![CICDMINITWIT](./report/image/CICDMINITWIT.png)
+![CICDMINITWIT](./images/CICDMINITWIT.png)
 *Figure 6: Flow diagram of CI/CD*
 
 Figure 6 shows our flowdiagram of the CI/CD pipeline on a push to main. Do note that our CI pipeline also gets run on any pull request.
