@@ -62,8 +62,8 @@ The primary and backup application servers are containerized using Docker Compos
 * Two MiniTwit application containers running the ASP.NET Core web app.
 
 ### User Access
-![Sequence](./images/Sequence.png)
-*Figure 3: Nginx distributing requests between two Docker containers using round robin and both querying PostgresSQL Database.*
+![Sequence](./report/image/Sequence.png)
+*Figure 3: Nginx distributing requests between two Docker containers using round robin and both querying PostgreSQL Database.*
 
 Figure 3 depicts how a User accesses the system through the Nginx reverse proxy. Nginx forwards incoming HTTP requests to the MiniTwit application containers through Docker’s internal network, and distributing traffic between the two replicas to reduce load on a single container and improve availability.
 
@@ -136,8 +136,9 @@ These issues were presumably caused by a lack of resources on the servers, as th
 Figure 5 shows how an idea gets to production. When an idea is made, we decide whether it should be a feature. If yes, then we create a feature branch from main, develop the feature, ensure idiomatic code, and create tests. If all tests pass, a pull request is created, and our CI pipeline runs. If review is approved, and CI passes, it is pushed to main, the CD runs, and the feature is pushed to the production environment.
 
 ### CI/CD Pipeline
-![CICDMINITWIT](./images/CICDMINITWIT.png)
-*Figure 6: Flowdiagram of CI/CD*
+![CICDMINITWIT](./report/image/CICDMINITWIT.png)
+*Figure 6: Flow diagram of CI/CD*
+
 Figure 6 shows our flowdiagram of the CI/CD pipeline on a push to main. Do note that our CI pipeline also gets run on any pull request.
 
 Our CI ensures that our tests passes and our project can be built. It also scans the repository for security vulnerabilities with Semgrep and uploads them to Github.
@@ -149,7 +150,7 @@ Do note that if one step in the pipeline fails, none of the subsequent steps wil
 ## Monitoring with Grafana
 ![image](./images/GrafanaTwo.png)
 *Figure 7: Grafana Dashboard*
-To monitor our system, we use Grafana, which is shown on Figure 7, integrated using prometheus as our "observer". Grafana serves as our systems health monitor, deployed via our dockerfile it provieds live insights into the systems overall health and performance metrics. Prometheus handles metrics collection and short time storage by scraping data from an endpoint exposed by our application at regular intervals.
+To monitor our system, we use Grafana, which is shown on Figure 7, integrated using prometheus as our "observer". Grafana serves as our systems health monitor, deployed via our dockerfile it provides live insights into the systems overall health and performance metrics. Prometheus handles metrics collection and short-time storage by scraping data from an endpoint exposed by our application at regular intervals.
 
 ### Infrastructure and integration:
 * __Prometheus config:__ Our prometheus.yml file defines our scrape targets, including the miniTwit app, and defines a 5 second scrape interval.
@@ -175,9 +176,9 @@ By Logging we ensure that we are provided visibility into incoming requests, inc
 ## Evolution and refactoring
 As described at the beginning, we chose to base our MiniTwit system on our previous BDSA course project. In hindsight, this was both an advantage and a challenge. 
 
-Our main advantage was we were familar with C# and .NET technologies and therefore could focus more on DevOps related work like deployment, monitoring, provisioning, and CI/CD. 
+Our main advantage was we were familiar with C# and .NET technologies and therefore could focus more on DevOps related work like deployment, monitoring, provisioning, and CI/CD. 
 
-The challenge was that the project was larger and more complex system than the original MiniTwit project. This meant every change required a stronger understanding of the existing architecture.
+The challenge was that the project was a larger and more complex system than the original MiniTwit project. This meant every change required a stronger understanding of the existing architecture.
 
 The most important refactorings were adding a MiniTwit compatible API, improving observability through logging, metrics, and adding session based login on top of ASP.NET Core Identity. These changes taught us that refactoring an existing system for DevOps purposes is not only about adding functionality but also about making the system understandable and operable. For example, the API was necessary for simulator interaction. It also introduced new possibilities for failure which were difficult to debug before we improved logging.
 
@@ -186,7 +187,7 @@ With the addition of containerization for creating the same deployment environme
 A key lesson from the project is that DevOps improvements often increase system complexity before they improve reliability.
 
 ## ERROR handling
-When we moved to using PostgreSQL we initially experienced no trouble, after the server was correctly setup, but upon inspection found that API calls did not result in logged error, but simply got redirected to the /error page, same when a desktop user experiences an error. This means that we were not logging errors, and missed a critical error with the PostrgresQL server not being able to handle timestamps users send with their requests to the server. After updating the logging, such that, API calls logs the error to the console, we were able to follow the error stream, and begin maintaining the server whenever issues arised.
+When we moved to using PostgreSQL we initially experienced no trouble, after the server was correctly setup, but upon inspection found that API calls did not result in logged errors, but simply got redirected to the /error page, same when a desktop user experiences an error. This means that we were not logging errors, and missed a critical error with the PostrgresQL server not being able to handle timestamps users send with their requests to the server. After updating the logging, such that, API calls log the errors to the console, we were able to follow the error stream, and begin maintaining the server whenever issues arose.
 
 ## WHAT DID WE DO DIFFERENTLY
 
@@ -211,7 +212,7 @@ The AI tools used throughout the project was Claude code, ChatGPT, and Codex.
 
 Generative AI has mostly been useful for understanding unfamiliar concepts, various debugging issues, and accelerating smaller development tasks. 
 
-However, the use of Generative AI also introduced challenges during the initial setup of automatic provisioning. We experienced difficulties configuring Vagrant to automatically ssh into the DigitalOcean droplet using a stored ssh key for this purpose. With the help of our TA we eventually identifies that the issue which related to storing SSH keys in github secrets. 
+However, the use of Generative AI also introduced challenges during the initial setup of automatic provisioning. We experienced difficulties configuring Vagrant to automatically ssh into the DigitalOcean droplet using a stored ssh key for this purpose. With the help of our TA we eventually identified that the issue which related to storing SSH keys in github secrets. 
 
 # Report contributions
 * Alfred(alfd):  
