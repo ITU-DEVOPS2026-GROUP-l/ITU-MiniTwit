@@ -26,19 +26,19 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        uses: actions/checkout@v4
 
       - name: Login to Docker Hub
-        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@b5730b3ab2b47d5e6ac9a3b5cf970b1b6264b4ce # v3
+        uses: docker/setup-buildx-action@v3
 
       - name: Build and push minitwitimage
-        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
@@ -53,7 +53,7 @@ jobs:
           command: cves
           image: ${{ secrets.DOCKER_USERNAME }}/minitwitimage:latest
           exit-code: true
-          only-severities: critical,high
+          only-severities: critical,high,medium,low
 
   deploy:
     runs-on: ubuntu-latest
@@ -61,24 +61,24 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        host_secret:
-          - SSH_HOST_PRIMARY
-          - SSH_HOST_BACKUP
+        host:
+          - ${{ secrets.SSH_HOST_PRIMARY }}
+          - ${{ secrets.SSH_HOST_BACKUP }}
 
     steps:
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        uses: actions/checkout@v4
 
       - name: Configure SSH
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H "${{ secrets[matrix.host_secret] }}" >> ~/.ssh/known_hosts
+          ssh-keyscan -H "${{ matrix.host }}" >> ~/.ssh/known_hosts
 
       - name: Sync deployment files to server
         run: |
-          ssh -i ~/.ssh/id_rsa "${{ secrets.SSH_USER }}@${{ secrets[matrix.host_secret] }}" \
+          ssh -i ~/.ssh/id_rsa "${{ secrets.SSH_USER }}@${{ matrix.host }}" \
             "mkdir -p /minitwit /minitwit/Monitoring"
 
           rsync -az \
@@ -86,16 +86,16 @@ jobs:
             ./remote_files/docker-compose.yml \
             ./remote_files/deploy.sh \
             ./remote_files/nginx.conf \
-            "${{ secrets.SSH_USER }}@${{ secrets[matrix.host_secret] }}:/minitwit/"
+            "${{ secrets.SSH_USER }}@${{ matrix.host }}:/minitwit/"
 
           rsync -az --delete \
             -e "ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa" \
             ./Monitoring/ \
-            "${{ secrets.SSH_USER }}@${{ secrets[matrix.host_secret] }}:/minitwit/Monitoring/"
+            "${{ secrets.SSH_USER }}@${{ matrix.host }}:/minitwit/Monitoring/"
 
       - name: Run deploy script on server
         run: |
-          ssh -i ~/.ssh/id_rsa "${{ secrets.SSH_USER }}@${{ secrets[matrix.host_secret] }}" \
-            "export DOCKER_USERNAME='${{ secrets.DOCKER_USERNAME }}' \
-             CHIRP_DB_CONNECTION='${{ secrets.CHIRP_DB_CONNECTION }}' && \
+          ssh -i ~/.ssh/id_rsa "${{ secrets.SSH_USER }}@${{ matrix.host }}" \
+            "export DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }} && \
+             export CHIRP_DB_CONNECTION='${{ secrets.CHIRP_DB_CONNECTION }}' && \
              bash /minitwit/deploy.sh"

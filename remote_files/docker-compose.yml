@@ -12,22 +12,27 @@ services:
     networks:
       - main
     depends_on:
-      - minitwit
+      - minitwit-1
+      - minitwit-2
+    restart: unless-stopped
 
-  minitwit:
-    image: ${DOCKER_USERNAME}/minitwitimage:${IMAGE_TAG}
-    deploy:
-      replicas: 2
-      update_config:
-        parallelism: 1
-        delay: 10s
-        order: start-first
+  minitwit-1:
+    image: ${DOCKER_USERNAME}/minitwitimage:latest
+    container_name: minitwit-1
     environment:
       CHIRP_DB_CONNECTION: ${CHIRP_DB_CONNECTION}
-    volumes:
-      - /root/chirp.db:/app/data/chirp.db:ro
     networks:
       - main
+    restart: unless-stopped
+
+  minitwit-2:
+    image: ${DOCKER_USERNAME}/minitwitimage:latest
+    container_name: minitwit-2
+    environment:
+      CHIRP_DB_CONNECTION: ${CHIRP_DB_CONNECTION}
+    networks:
+      - main
+    restart: unless-stopped
 
   prometheus:
     image: prom/prometheus
@@ -41,8 +46,9 @@ services:
     networks:
       - main
     depends_on:
-      - minitwit
-  
+      - minitwit-1
+    restart: unless-stopped
+
   loki:
     image: grafana/loki:3.6.7
     container_name: loki
@@ -55,7 +61,7 @@ services:
     networks:
       - main
     restart: unless-stopped
-    
+
   promtail:
     image: grafana/promtail:3.6.0
     container_name: promtail
@@ -69,20 +75,21 @@ services:
     depends_on:
       - loki
     restart: unless-stopped
-  
+
   grafana:
     image: grafana_image
     container_name: grafana
-    ports: 
+    ports:
       - "3000:3000"
-    volumes: 
+    volumes:
       - grafana-storage:/var/lib/grafana
       - ./Monitoring/grafana/provisioning:/etc/grafana/provisioning
     networks:
       - main
     depends_on:
-      -  prometheus
-      -  loki
+      - prometheus
+      - loki
+    restart: unless-stopped
 
 volumes:
   grafana-storage:
